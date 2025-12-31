@@ -49,11 +49,11 @@ python3 statistics_analyzer.py -h
 ====================================================================================================
 时间           域名来源                      书籍名称                                章节数      IP数量     总访问     
 ----------------------------------------------------------------------------------------------------
-10月11日       adx.myfreenovel.com       Heartbreak Billionaire: He Should Never Have Let Go 135      15       258     
-10月11日       adx.myfreenovel.com       Irresistible Seduction Married For Deception Loved For Real 96       19       268     
-10月11日       adx.myfreenovel.com       My Rejected Mate Regrets            25       1        28      
-10月11日       adx.myfreenovel.com       Runaway Heiress Reborn Crushing CEO Ex 96       7        144     
-10月11日       adx.myfreenovel.com       The Hidden Heiress Divorces The CEO 98       8        155     
+10月11日       re.cankalp.com            Heartbreak Billionaire: He Should Never Have Let Go 135      15       258     
+10月11日       re.cankalp.com            Irresistible Seduction Married For Deception Loved For Real 96       19       268     
+10月11日       re.cankalp.com            My Rejected Mate Regrets            25       1        28      
+10月11日       re.cankalp.com            Runaway Heiress Reborn Crushing CEO Ex 96       7        144     
+10月11日       re.cankalp.com            The Hidden Heiress Divorces The CEO 98       8        155     
 ----------------------------------------------------------------------------------------------------
 总计                                                                       450      50       853     
 ====================================================================================================
@@ -63,8 +63,8 @@ python3 statistics_analyzer.py -h
 生成的CSV文件格式：
 ```csv
 时间,域名来源（不记录后缀）,书籍名称,累计章节（含chapter的url）,累计ip数量（去重）,总访问次数
-10月11日,adx.myfreenovel.com,Heartbreak Billionaire: He Should Never Have Let Go,135,15,258
-10月11日,adx.myfreenovel.com,Irresistible Seduction Married For Deception Loved For Real,96,19,268
+10月11日,re.cankalp.com,Heartbreak Billionaire: He Should Never Have Let Go,135,15,258
+10月11日,re.cankalp.com,Irresistible Seduction Married For Deception Loved For Real,96,19,268
 ```
 
 ## 🔧 技术特点

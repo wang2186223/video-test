@@ -21,13 +21,13 @@
         function hasTrackingParams() {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
-                for (let param of TRACKING_PARAMS) {
+                for (const param of TRACKING_PARAMS) {
                     if (urlParams.has(param)) {
                         return true;
                     }
                 }
             } catch (e) {
-                console.error('Failed to parse URL parameters:', e);
+                console.error('Error checking tracking params:', e);
             }
             return false;
         }
@@ -37,13 +37,21 @@
          */
         function hasStoredTrackingParams() {
             try {
-                const expiryTime = localStorage.getItem(STORAGE_EXPIRY_KEY);
-                if (expiryTime && Date.now() < parseInt(expiryTime)) {
-                    const stored = localStorage.getItem(STORAGE_KEY);
-                    return stored === 'true';
+                const expiry = localStorage.getItem(STORAGE_EXPIRY_KEY);
+                const hasParams = localStorage.getItem(STORAGE_KEY);
+                
+                if (expiry && hasParams === 'true') {
+                    const expiryTime = parseInt(expiry);
+                    if (Date.now() < expiryTime) {
+                        return true;
+                    } else {
+                        // Expired, clear storage
+                        localStorage.removeItem(STORAGE_KEY);
+                        localStorage.removeItem(STORAGE_EXPIRY_KEY);
+                    }
                 }
             } catch (e) {
-                console.error('Failed to read localStorage:', e);
+                console.error('Error checking stored params:', e);
             }
             return false;
         }
@@ -53,11 +61,11 @@
          */
         function saveTrackingParamStatus() {
             try {
-                localStorage.setItem(STORAGE_KEY, 'true');
                 const expiryTime = Date.now() + (EXPIRY_HOURS * 60 * 60 * 1000);
+                localStorage.setItem(STORAGE_KEY, 'true');
                 localStorage.setItem(STORAGE_EXPIRY_KEY, expiryTime.toString());
             } catch (e) {
-                console.error('Failed to save to localStorage:', e);
+                console.error('Error saving tracking status:', e);
             }
         }
         
@@ -74,7 +82,7 @@
                 // Replace .html with -clean.html
                 cleanPath = currentPath.replace(/\.html$/, '-clean.html');
             } else {
-                // Add -clean.html suffix
+                // Add -clean.html
                 cleanPath = currentPath + '-clean.html';
             }
             
@@ -96,8 +104,7 @@
             // If URL has tracking parameters, save to localStorage
             if (hasParams) {
                 saveTrackingParamStatus();
-                // User has tracking params, show ad version (no redirect needed)
-                return;
+                return; // User has tracking params, show ad version
             }
             
             // Check if localStorage has tracking parameter history
@@ -116,869 +123,46 @@
     })();
     </script>
     
-    <!-- Reading Limit System -->
-    <script>
-    (function() {
-        'use strict';
-        
-        // ===== Configuration =====
-        const CONFIG = {
-            COOLDOWN_HOURS: 3,
-            CHAPTER_LIMIT_BASE: 120,  // 120, 240, 360...
-        };
-        
-        // ===== Utility Functions =====
-        
-        /**
-         * Get local date string (YYYY-MM-DD)
-         */
-        function getLocalDateString() {
-            const now = new Date();
-            return now.toLocaleDateString('en-CA');  // Format: 2025-11-12
-        }
-        
-        /**
-         * Get current chapter limit based on cooldown count
-         */
-        function getChapterLimit() {
-            const cooldownCount = parseInt(localStorage.getItem('readingLimitCooldownCount') || '0');
-            return CONFIG.CHAPTER_LIMIT_BASE * (cooldownCount + 1);
-        }
-        
-        /**
-         * Reset daily data
-         */
-        function resetDailyData(today) {
-            localStorage.setItem('readingLimitDate', today);
-            localStorage.setItem('readingLimitChapterCount', '0');
-            localStorage.setItem('readingLimitCooldownCount', '0');
-            localStorage.setItem('readingLimitIsInCooldown', 'false');
-            localStorage.removeItem('readingLimitCooldownStart');
-            localStorage.removeItem('readingLimitCooldownDuration');
-        }
-        
-        /**
-         * Check if date changed and reset if needed
-         */
-        function checkDailyReset() {
-            const today = getLocalDateString();
-            const storedDate = localStorage.getItem('readingLimitDate');
-            
-            if (storedDate !== today) {
-                resetDailyData(today);
-                return true;
-            }
-            return false;
-        }
-        
-        /**
-         * Check cooldown status
-         */
-        function checkCooldownStatus() {
-            const isInCooldown = localStorage.getItem('readingLimitIsInCooldown') === 'true';
-            if (!isInCooldown) return { active: false };
-            
-            const startTime = parseInt(localStorage.getItem('readingLimitCooldownStart') || '0');
-            const duration = parseInt(localStorage.getItem('readingLimitCooldownDuration') || '0');
-            const now = Date.now();
-            const elapsed = now - startTime;
-            
-            if (elapsed >= duration) {
-                // Cooldown ended
-                endCooldown();
-                return { active: false };
-            }
-            
-            // Still in cooldown
-            const remaining = duration - elapsed;
-            return {
-                active: true,
-                remainingMs: remaining,
-                remainingHours: Math.floor(remaining / (60 * 60 * 1000)),
-                remainingMinutes: Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000)),
-                remainingSeconds: Math.floor((remaining % (60 * 1000)) / 1000)
-            };
-        }
-        
-        /**
-         * Start cooldown
-         */
-        function startCooldown() {
-            const now = Date.now();
-            const cooldownDuration = CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000;
-            
-            localStorage.setItem('readingLimitCooldownStart', now.toString());
-            localStorage.setItem('readingLimitCooldownDuration', cooldownDuration.toString());
-            localStorage.setItem('readingLimitIsInCooldown', 'true');
-            
-            // Increment cooldown count
-            const count = parseInt(localStorage.getItem('readingLimitCooldownCount') || '0');
-            localStorage.setItem('readingLimitCooldownCount', (count + 1).toString());
-        }
-        
-        /**
-         * End cooldown
-         */
-        function endCooldown() {
-            localStorage.setItem('readingLimitIsInCooldown', 'false');
-            localStorage.removeItem('readingLimitCooldownStart');
-            localStorage.removeItem('readingLimitCooldownDuration');
-        }
-        
-        /**
-         * Increment chapter count
-         */
-        function incrementChapterCount() {
-            const current = parseInt(localStorage.getItem('readingLimitChapterCount') || '0');
-            localStorage.setItem('readingLimitChapterCount', (current + 1).toString());
-            return current + 1;
-        }
-        
-        /**
-         * Get current chapter count
-         */
-        function getCurrentChapterCount() {
-            return parseInt(localStorage.getItem('readingLimitChapterCount') || '0');
-        }
-        
-        /**
-         * Check if should enter cooldown
-         */
-        function shouldEnterCooldown(currentCount) {
-            const limit = getChapterLimit();
-            return currentCount >= limit;
-        }
-        
-        // ===== UI Functions =====
-        
-        /**
-         * Show cooldown overlay
-         */
-        function showCooldownOverlay() {
-            // Remove existing overlay if any
-            const existing = document.getElementById('cooldown-overlay');
-            if (existing) existing.remove();
-            
-            const overlay = document.createElement('div');
-            overlay.id = 'cooldown-overlay';
-            overlay.innerHTML = `
-                <div class="cooldown-container">
-                    <div class="cooldown-icon">⏳</div>
-                    <h2 class="cooldown-title">Reading Limit Reached</h2>
-                    <p class="cooldown-message">
-                        You've enjoyed <span class="chapters-read" id="chapters-read-count">120</span> chapters today!
-                    </p>
-                    <div class="cooldown-timer">
-                        <span class="timer-value" id="timer-display">00:00:00</span>
-                    </div>
-                    <p class="cooldown-hint">
-                        Feel free to come back in 
-                        <strong class="time-remaining" id="time-remaining-text">3 hours</strong> 
-                        to resume the ad-supported experience.
-                    </p>
-                    <div class="cooldown-progress">
-                        <div class="progress-bar" id="progress-bar"></div>
-                    </div>
-                    <p class="cooldown-footer">
-                        🌟 Thank you for your support!
-                    </p>
-                </div>
-            `;
-            
-            document.body.appendChild(overlay);
-            updateCooldownTimer();
-        }
-        
-        /**
-         * Hide cooldown overlay
-         */
-        function hideCooldownOverlay() {
-            const overlay = document.getElementById('cooldown-overlay');
-            if (overlay) overlay.remove();
-        }
-        
-        /**
-         * Update cooldown timer
-         */
-        let timerInterval = null;
-        function updateCooldownTimer() {
-            const status = checkCooldownStatus();
-            
-            if (!status.active) {
-                // Clear interval to prevent unnecessary updates
-                if (timerInterval) {
-                    clearInterval(timerInterval);
-                    timerInterval = null;
-                }
-                hideCooldownOverlay();
-                // Don't reload automatically, just hide overlay
-                // User can continue reading after cooldown ends
-                return;
-            }
-            
-            // Update timer display
-            const hours = String(status.remainingHours).padStart(2, '0');
-            const minutes = String(status.remainingMinutes).padStart(2, '0');
-            const seconds = String(status.remainingSeconds).padStart(2, '0');
-            
-            const timerElement = document.getElementById('timer-display');
-            if (timerElement) {
-                timerElement.textContent = `${hours}:${minutes}:${seconds}`;
-            }
-            
-            // Update remaining text
-            const totalHours = Math.ceil(status.remainingMs / (60 * 60 * 1000));
-            const remainingText = document.getElementById('time-remaining-text');
-            if (remainingText) {
-                remainingText.textContent = `${totalHours} ${totalHours > 1 ? 'hours' : 'hour'}`;
-            }
-            
-            // Update chapters read
-            const chaptersRead = getCurrentChapterCount();
-            const chaptersElement = document.getElementById('chapters-read-count');
-            if (chaptersElement) {
-                chaptersElement.textContent = chaptersRead;
-            }
-            
-            // Update progress bar
-            const totalDuration = CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000;
-            const progress = ((totalDuration - status.remainingMs) / totalDuration) * 100;
-            const progressBar = document.getElementById('progress-bar');
-            if (progressBar) {
-                progressBar.style.width = `${progress}%`;
-            }
-        }
-        
-        // ===== Main Initialization =====
-        
-        /**
-         * Initialize reading limit system
-         */
-        function initReadingLimit() {
-            // Step 1: Check daily reset
-            checkDailyReset();
-            
-            // Step 2: Check cooldown status
-            const cooldown = checkCooldownStatus();
-            if (cooldown.active) {
-                showCooldownOverlay();
-                // Update timer every second
-                timerInterval = setInterval(updateCooldownTimer, 1000);
-                return;
-            }
-            
-            // Step 3: Increment chapter count
-            const newCount = incrementChapterCount();
-            
-            // Step 4: Check if should enter cooldown
-            if (shouldEnterCooldown(newCount)) {
-                startCooldown();
-                showCooldownOverlay();
-                timerInterval = setInterval(updateCooldownTimer, 1000);
-            }
-        }
-        
-        // ===== Console Commands =====
-        
-        window.ReadingLimitControl = {
-            status: function() {
-                const data = {
-                    date: localStorage.getItem('readingLimitDate'),
-                    chapters: parseInt(localStorage.getItem('readingLimitChapterCount') || '0'),
-                    limit: getChapterLimit(),
-                    cooldownCount: parseInt(localStorage.getItem('readingLimitCooldownCount') || '0'),
-                    isInCooldown: localStorage.getItem('readingLimitIsInCooldown') === 'true',
-                    cooldownStart: localStorage.getItem('readingLimitCooldownStart'),
-                    cooldownDuration: localStorage.getItem('readingLimitCooldownDuration')
-                };
-                console.table(data);
-                return data;
-            },
-            
-            reset: function() {
-                if (confirm('⚠️ Reset all reading limits? This will clear all data.')) {
-                    localStorage.removeItem('readingLimitDate');
-                    localStorage.removeItem('readingLimitChapterCount');
-                    localStorage.removeItem('readingLimitCooldownStart');
-                    localStorage.removeItem('readingLimitCooldownDuration');
-                    localStorage.removeItem('readingLimitIsInCooldown');
-                    localStorage.removeItem('readingLimitCooldownCount');
-                    console.log('✅ All reading limits have been reset!');
-                    location.reload();
-                }
-            },
-            
-            addChapters: function(count = 1) {
-                const current = parseInt(localStorage.getItem('readingLimitChapterCount') || '0');
-                const newCount = current + count;
-                localStorage.setItem('readingLimitChapterCount', newCount.toString());
-                console.log(`✅ Added ${count} chapters. Total: ${newCount}`);
-                location.reload();
-            },
-            
-            setChapters: function(count) {
-                localStorage.setItem('readingLimitChapterCount', count.toString());
-                console.log(`✅ Set chapter count to: ${count}`);
-                location.reload();
-            },
-            
-            endCooldown: function() {
-                localStorage.setItem('readingLimitIsInCooldown', 'false');
-                console.log('✅ Cooldown ended immediately!');
-                location.reload();
-            },
-            
-            startCooldown: function() {
-                const now = Date.now();
-                localStorage.setItem('readingLimitCooldownStart', now.toString());
-                localStorage.setItem('readingLimitCooldownDuration', (CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000).toString());
-                localStorage.setItem('readingLimitIsInCooldown', 'true');
-                console.log(`✅ Cooldown started for ${CONFIG.COOLDOWN_HOURS} hours!`);
-                location.reload();
-            },
-            
-            help: function() {
-                console.log(`
-🔧 Reading Limit Control Commands:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📊 View Status:
-   ReadingLimitControl.status()
-
-🔄 Reset Everything:
-   ReadingLimitControl.reset()
-
-📖 Add Chapters:
-   ReadingLimitControl.addChapters(1)
-   ReadingLimitControl.addChapters(10)
-
-🎯 Set Specific Count:
-   ReadingLimitControl.setChapters(119)
-   ReadingLimitControl.setChapters(120)
-
-⏱️ Cooldown Control:
-   ReadingLimitControl.endCooldown()
-   ReadingLimitControl.startCooldown()
-
-❓ Help:
-   ReadingLimitControl.help()
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                `);
-            }
-        };
-        
-        // Execute on page load
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initReadingLimit);
-        } else {
-            initReadingLimit();
-        }
-        
-        // Show help on load
-        console.log('💡 Reading Limit System loaded. Type ReadingLimitControl.help() for commands.');
-    })();
-    </script>
-    
-    <!-- Ad Protection System -->
-    <script>
-    (function() {
-        'use strict';
-        
-        // ===== Configuration =====
-        const CONFIG = {
-            COOLDOWN_HOURS: 5,
-            CHECK_INTERVAL_BASE: 30,     // Base check interval: 30, 60, 90...
-            RATIO_THRESHOLD: 1.1,        // Trigger when: failed × 1.1 >= success
-        };
-        
-        // ===== Utility Functions =====
-        
-        /**
-         * Get local date string (YYYY-MM-DD)
-         */
-        function getLocalDateString() {
-            const now = new Date();
-            return now.toLocaleDateString('en-CA');  // Format: 2025-11-18
-        }
-        
-        /**
-         * Get check interval - always 30
-         */
-        function getCheckInterval() {
-            return CONFIG.CHECK_INTERVAL_BASE; // Always 30
-        }
-        
-        /**
-         * Reset daily data
-         */
-        function resetDailyData(today) {
-            localStorage.setItem('adProtectionDate', today);
-            localStorage.setItem('adProtectionCooldownCount', '0');
-            localStorage.setItem('adProtectionIsInCooldown', 'false');
-            localStorage.removeItem('adProtectionCooldownStart');
-            localStorage.removeItem('adProtectionCooldownDuration');
-            localStorage.removeItem('adProtectionLastChecked');
-        }
-        
-        /**
-         * Check if date changed and reset if needed
-         */
-        function checkDailyReset() {
-            const today = getLocalDateString();
-            const storedDate = localStorage.getItem('adProtectionDate');
-            
-            if (storedDate !== today) {
-                resetDailyData(today);
-                return true;
-            }
-            return false;
-        }
-        
-        /**
-         * Check cooldown status
-         */
-        function checkCooldownStatus() {
-            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
-            if (!isInCooldown) return { active: false };
-            
-            const startTime = parseInt(localStorage.getItem('adProtectionCooldownStart') || '0');
-            const duration = parseInt(localStorage.getItem('adProtectionCooldownDuration') || '0');
-            const now = Date.now();
-            const elapsed = now - startTime;
-            
-            if (elapsed >= duration) {
-                // Cooldown ended
-                endCooldown();
-                return { active: false };
-            }
-            
-            // Still in cooldown
-            const remaining = duration - elapsed;
-            return {
-                active: true,
-                remainingMs: remaining,
-                remainingHours: Math.floor(remaining / (60 * 60 * 1000)),
-                remainingMinutes: Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000)),
-                remainingSeconds: Math.floor((remaining % (60 * 1000)) / 1000)
-            };
-        }
-        
-        /**
-         * Start cooldown
-         */
-        function startCooldown() {
-            const now = Date.now();
-            const cooldownDuration = CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000;
-            
-            localStorage.setItem('adProtectionCooldownStart', now.toString());
-            localStorage.setItem('adProtectionCooldownDuration', cooldownDuration.toString());
-            localStorage.setItem('adProtectionIsInCooldown', 'true');
-            
-            // Increment cooldown count
-            const count = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
-            localStorage.setItem('adProtectionCooldownCount', (count + 1).toString());
-        }
-        
-        /**
-         * End cooldown
-         */
-        function endCooldown() {
-            localStorage.setItem('adProtectionIsInCooldown', 'false');
-            localStorage.removeItem('adProtectionCooldownStart');
-            localStorage.removeItem('adProtectionCooldownDuration');
-        }
-        
-        /**
-         * Get current failed ad count (from adGuideFailedAds)
-         */
-        function getCurrentFailedAdCount() {
-            return parseInt(localStorage.getItem('adGuideFailedAds') || '0');
-        }
-        
-        /**
-         * Check if should enter cooldown
-         */
-        function shouldEnterCooldown(currentCount) {
-            const limit = getFailedAdLimit();
-            return currentCount >= limit;
-        }
-        
-        // ===== UI Functions =====
-        
-        /**
-         * Show ad protection overlay
-         */
-        function showAdProtectionOverlay() {
-            // Remove existing overlay if any
-            const existing = document.getElementById('ad-protection-overlay');
-            if (existing) existing.remove();
-            
-            const overlay = document.createElement('div');
-            overlay.id = 'ad-protection-overlay';
-            overlay.innerHTML = `
-                <div class="ad-protection-container">
-                    <div class="ad-protection-icon">📚</div>
-                    <h2 class="ad-protection-title">Free novel</h2>
-                    <p class="ad-protection-message">
-                        Your daily limit for free novels has been reached.
-                    </p>
-                    <div class="ad-protection-timer">
-                        <span class="timer-value" id="ad-protection-timer-display">00:00:00</span>
-                    </div>
-                    <p class="ad-protection-hint">
-                        Please return in 
-                        <strong class="time-remaining" id="ad-protection-time-remaining-text">5 hours</strong>.
-                    </p>
-                    <div class="ad-protection-progress">
-                        <div class="progress-bar" id="ad-protection-progress-bar"></div>
-                    </div>
-                    <p class="ad-protection-footer">
-                        🌟 Thank you for your understanding!
-                    </p>
-                </div>
-            `;
-            
-            document.body.appendChild(overlay);
-            updateAdProtectionTimer();
-        }
-        
-        /**
-         * Hide ad protection overlay
-         */
-        function hideAdProtectionOverlay() {
-            const overlay = document.getElementById('ad-protection-overlay');
-            if (overlay) overlay.remove();
-        }
-        
-        /**
-         * Update ad protection timer
-         */
-        let timerInterval = null;
-        function updateAdProtectionTimer() {
-            const status = checkCooldownStatus();
-            
-            if (!status.active) {
-                // Clear interval to prevent unnecessary updates
-                if (timerInterval) {
-                    clearInterval(timerInterval);
-                    timerInterval = null;
-                }
-                hideAdProtectionOverlay();
-                return;
-            }
-            
-            // Update timer display
-            const hours = String(status.remainingHours).padStart(2, '0');
-            const minutes = String(status.remainingMinutes).padStart(2, '0');
-            const seconds = String(status.remainingSeconds).padStart(2, '0');
-            
-            const timerElement = document.getElementById('ad-protection-timer-display');
-            if (timerElement) {
-                timerElement.textContent = `${hours}:${minutes}:${seconds}`;
-            }
-            
-            // Update remaining text
-            const totalHours = Math.ceil(status.remainingMs / (60 * 60 * 1000));
-            const remainingText = document.getElementById('ad-protection-time-remaining-text');
-            if (remainingText) {
-                remainingText.textContent = `${totalHours} ${totalHours > 1 ? 'hours' : 'hour'}`;
-            }
-            
-            // Update progress bar
-            const totalDuration = CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000;
-            const progress = ((totalDuration - status.remainingMs) / totalDuration) * 100;
-            const progressBar = document.getElementById('ad-protection-progress-bar');
-            if (progressBar) {
-                progressBar.style.width = `${progress}%`;
-            }
-        }
-        
-        // ===== Main Initialization =====
-        
-        /**
-         * Initialize ad protection system
-         */
-        function initAdProtection() {
-            // Step 1: Check daily reset
-            checkDailyReset();
-            
-            // Step 2: Check cooldown status
-            const cooldown = checkCooldownStatus();
-            if (cooldown.active) {
-                showAdProtectionOverlay();
-                // Update timer every second
-                timerInterval = setInterval(updateAdProtectionTimer, 1000);
-                
-                // Report page load check
-                reportAdProtection('page_load_check', { checkPoint: 0 });
-                
-                return true; // Indicate system is in cooldown
-            }
-            
-            return false; // System is not in cooldown
-        }
-        
-        /**
-         * Check and update failed ad count with dynamic ratio checking
-         * Checks every 30 failed ads (30, 60, 90, 120...)
-         */
-        function checkFailedAdLimit() {
-            // If already in cooldown, skip check to prevent duplicate triggers
-            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
-            if (isInCooldown) {
-                return; // Already in cooldown period, no need to check
-            }
-            
-            // Get current counts
-            const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
-            const successAds = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
-            const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
-            const checkInterval = CONFIG.CHECK_INTERVAL_BASE; // Always 30
-            
-            // Calculate current check point (30, 60, 90, 120...)
-            // Use floor to get the latest crossed checkpoint
-            const currentCheckPoint = Math.floor(failedAds / checkInterval) * checkInterval;
-            
-            // Check if we crossed a new checkpoint
-            // Allow delay: if failedAds is 31 or 32, currentCheckPoint will be 30
-            // and it will trigger if lastChecked < 30
-            if (currentCheckPoint > lastChecked && currentCheckPoint > 0) {
-                // Update lastChecked to current checkpoint to prevent duplicate checks
-                localStorage.setItem('adProtectionLastChecked', currentCheckPoint.toString());
-                
-                console.log(`🛡️ Ad Protection: Check point ${currentCheckPoint} reached (actual failed: ${failedAds}). Success: ${successAds}`);
-                
-                // Check ratio: failed × 1.1 >= success → trigger
-                if (failedAds * CONFIG.RATIO_THRESHOLD >= successAds) {
-                    console.log(`🛡️ Ad Protection: Ratio check FAILED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} >= ${successAds}). Triggering cooldown.`);
-                    
-                    // Report trigger event
-                    reportAdProtection('triggered', { checkPoint: currentCheckPoint });
-                    
-                    startCooldown();
-                    showAdProtectionOverlay();
-                    timerInterval = setInterval(updateAdProtectionTimer, 1000);
-                } else {
-                    console.log(`🛡️ Ad Protection: Ratio check PASSED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} < ${successAds}). Continue monitoring.`);
-                }
-            }
-        }
-        
-        /**
-         * 上报广告保护事件到 Google Sheets
-         */
-        async function reportAdProtection(eventType, extraData = {}) {
-            try {
-                const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
-                const successAds = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
-                const cooldownCount = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
-                const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
-                const overlayElement = document.getElementById('ad-protection-overlay');
-                const overlayShown = overlayElement !== null && overlayElement.style.display !== 'none';
-                
-                const reportData = {
-                    timestamp: new Date().toISOString(),
-                    eventType: eventType,
-                    novel: 'The Hidden Heiress Divorces the CEO',
-                    chapter: '178',
-                    pageUrl: window.location.href,
-                    userAgent: navigator.userAgent,
-                    userIP: '',
-                    failedAds: failedAds,
-                    successAds: successAds,
-                    ratio: successAds > 0 ? (failedAds / successAds).toFixed(2) : 'N/A',
-                    checkPoint: extraData.checkPoint || 0,
-                    isInCooldown: isInCooldown,
-                    overlayShown: overlayShown,
-                    cooldownCount: cooldownCount
-                };
-                
-                // 获取IP
-                if (typeof getUserIP === 'function') {
-                    reportData.userIP = await getUserIP();
-                } else {
-                    try {
-                        const res = await fetch('https://api.ipify.org?format=json');
-                        const json = await res.json();
-                        reportData.userIP = json.ip;
-                    } catch (e) {
-                        reportData.userIP = 'Unknown';
-                    }
-                }
-                
-                // 上报到 Google Sheets
-                const scriptUrl = 'https://script.google.com/macros/s/AKfycbySAuD966h8z2JL8g7deGB-1IiSazTqfPeVWFdpb85HxxFthdi-W3YeV3bRVKLzKfjR1A/exec';
-                
-                fetch(scriptUrl, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(reportData)
-                });
-                
-                console.log('🛡️ Ad Protection: 上报完成 -', eventType);
-            } catch (error) {
-                console.error('🛡️ Ad Protection: 上报失败', error);
-            }
-        }
-        
-        // ===== Console Commands =====
-        
-        window.AdProtectionControl = {
-            status: function() {
-                const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
-                const successAds = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
-                const checkInterval = getCheckInterval();
-                const ratio = successAds > 0 ? (failedAds / successAds).toFixed(2) : 'N/A';
-                const nextCheck = Math.ceil(failedAds / checkInterval) * checkInterval;
-                
-                const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
-                const willTrigger = failedAds * 1.1 >= successAds ? '❌ Will Trigger' : '✅ Safe';
-                
-                const data = {
-                    date: localStorage.getItem('adProtectionDate'),
-                    failedAds: failedAds,
-                    successAds: successAds,
-                    ratio: ratio + ' ' + willTrigger,
-                    checkInterval: '30 (checks at 30, 60, 90, 120...)',
-                    lastChecked: lastChecked,
-                    nextCheckPoint: nextCheck,
-                    cooldownCount: parseInt(localStorage.getItem('adProtectionCooldownCount') || '0') + ' times triggered',
-                    isInCooldown: localStorage.getItem('adProtectionIsInCooldown') === 'true',
-                    cooldownStart: localStorage.getItem('adProtectionCooldownStart'),
-                    cooldownDuration: localStorage.getItem('adProtectionCooldownDuration')
-                };
-                console.table(data);
-                return data;
-            },
-            
-            reset: function() {
-                if (confirm('⚠️ Reset ad protection system? This will clear all data.')) {
-                    localStorage.removeItem('adProtectionDate');
-                    localStorage.removeItem('adProtectionCooldownStart');
-                    localStorage.removeItem('adProtectionCooldownDuration');
-                    localStorage.removeItem('adProtectionIsInCooldown');
-                    localStorage.removeItem('adProtectionCooldownCount');
-                    localStorage.removeItem('adProtectionLastChecked');
-                    console.log('✅ Ad protection system has been reset!');
-                    location.reload();
-                }
-            },
-            
-            addFailedAds: function(count = 1) {
-                const current = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
-                const newCount = current + count;
-                localStorage.setItem('adGuideFailedAds', newCount.toString());
-                console.log(`✅ Added ${count} failed ads. Total: ${newCount}`);
-                location.reload();
-            },
-            
-            setFailedAds: function(count) {
-                localStorage.setItem('adGuideFailedAds', count.toString());
-                console.log(`✅ Set failed ad count to: ${count}`);
-                location.reload();
-            },
-            
-            endCooldown: function() {
-                localStorage.setItem('adProtectionIsInCooldown', 'false');
-                console.log('✅ Ad protection cooldown ended immediately!');
-                location.reload();
-            },
-            
-            startCooldown: function() {
-                const now = Date.now();
-                localStorage.setItem('adProtectionCooldownStart', now.toString());
-                localStorage.setItem('adProtectionCooldownDuration', (CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000).toString());
-                localStorage.setItem('adProtectionIsInCooldown', 'true');
-                console.log(`✅ Ad protection cooldown started for ${CONFIG.COOLDOWN_HOURS} hours!`);
-                location.reload();
-            },
-            
-            help: function() {
-                console.log(`
-🛡️ Ad Protection Control Commands:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📊 View Status:
-   AdProtectionControl.status()
-
-🔄 Reset Everything:
-   AdProtectionControl.reset()
-
-⚠️ Add Failed Ads:
-   AdProtectionControl.addFailedAds(1)
-   AdProtectionControl.addFailedAds(10)
-
-🎯 Set Specific Count:
-   AdProtectionControl.setFailedAds(29)
-   AdProtectionControl.setFailedAds(30)
-   AdProtectionControl.setFailedAds(60)
-
-⏱️ Cooldown Control:
-   AdProtectionControl.endCooldown()
-   AdProtectionControl.startCooldown()
-
-❓ Help:
-   AdProtectionControl.help()
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                `);
-            }
-        };
-        
-        // Execute on page load
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                initAdProtection();
-                // Monitor failed ad count every 5 seconds
-                setInterval(checkFailedAdLimit, 5000);
-            });
-        } else {
-            initAdProtection();
-            // Monitor failed ad count every 5 seconds
-            setInterval(checkFailedAdLimit, 5000);
-        }
-        
-        // Show help on load
-        console.log('🛡️ Ad Protection System loaded. Type AdProtectionControl.help() for commands.');
-    })();
-    </script>
-    
-    <!-- Disable Console Output -->
-    <script>
-    (function() {
-        'use strict';
-        // Override all console methods to prevent any output
-        if (typeof console !== 'undefined') {
-            const noop = function() {};
-            const methods = ['log', 'debug', 'info', 'warn', 'error', 'trace', 'dir', 'dirxml', 
-                           'group', 'groupCollapsed', 'groupEnd', 'time', 'timeEnd', 'timeLog',
-                           'assert', 'profile', 'profileEnd', 'count', 'countReset', 'table', 'clear'];
-            methods.forEach(function(method) {
-                if (console[method]) {
-                    console[method] = noop;
-                }
-            });
-        }
-    })();
-    </script>
-    
     <title>Chapter 178 - The Hidden Heiress Divorces the CEO | NovelVibe</title>
+    <meta name="description" content="Read The Hidden Heiress Divorces the CEO Chapter 178 on NovelVibe - Free werewolf romance novels">
+    <meta name="keywords" content="romance, fantasy">
     
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1TFKEB1Q55"></script>
+    <!-- Time Meta Tags for SEO -->
+    
+    <meta property="article:published_time" content="2025-12-31T09:53:00.392248">
+    <meta property="article:modified_time" content="2025-12-31T09:53:00.392248">
+    <meta name="date" content="2025-12-31">
+    <meta name="last-modified" content="2025-12-31 09:53:00">
+    
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Chapter 178">
+    <meta property="og:description" content="Read The Hidden Heiress Divorces the CEO online for free">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://novel.234xi.com//novels/the-hidden-heiress-divorces-the-ceo/chapter-178.html">
+    <meta property="og:image" content="/covers/the-hidden-heiress-divorces-the-ceo-wechat_2025-09-23_154056_444.png">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Chapter 178">
+    <meta name="twitter:description" content="Read The Hidden Heiress Divorces the CEO online">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://novel.234xi.com//novels/the-hidden-heiress-divorces-the-ceo/chapter-178.html">
+    
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YKK2QRZ5GC"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
-      gtag('config', 'G-1TFKEB1Q55');
+      gtag('config', 'G-YKK2QRZ5GC');
     </script>
     
-    <!-- Google AdSense Direct for all banners -->
-    <script async
-         src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle_direct.js?
-         client=ca-pub-8799837421149750" crossorigin="anonymous">
-    </script>
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3389384312091761"
+         crossorigin="anonymous"></script>
+
     
     <!-- Facebook Pixel Code -->
     <script>
@@ -991,7 +175,7 @@
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
 
-    fbq('init', '1355356909503023');
+    fbq('init', '747225277772713');
     
     // Natural 72-hour event tracking prevention (resets every 3 days)
     function shouldTrackEvent(eventName) {
@@ -1012,9 +196,9 @@
     // Track PageView with 72-hour prevention
     if (shouldTrackEvent('PageView')) {
         fbq('track', 'PageView');
-        console.log('Facebook event sent: PageView');
+        console.log('Facebook事件已发送: PageView (页面浏览)');
     } else {
-        console.log('Facebook event skipped: PageView (already sent within 72 hours)');
+        console.log('Facebook事件已跳过: PageView (本72小时内已发送)');
     }
     
     // Reading time tracking for Facebook Pixel
@@ -1027,21 +211,29 @@
         const readingTime = (currentTime - readingStartTime) / 1000 / 60; // in minutes
         
         if (!oneMinuteSent && readingTime >= 1) {
-            if (shouldTrackEvent('1m_web')) {
-                fbq('track', '1m_web');
-                console.log('Facebook event sent: 1m_web (user read for 1 minute)');
+            if (shouldTrackEvent('ReadOneMinute')) {
+                fbq('trackCustom', 'ReadOneMinute', {
+                    content_name: 'The Hidden Heiress Divorces the CEO',
+                    content_category: 'Novel',
+                    reading_time: 1
+                });
+                console.log('Facebook事件已发送: ReadOneMinute (用户阅读1分钟)');
             } else {
-                console.log('Facebook event skipped: 1m_web (already sent within 72 hours)');
+                console.log('Facebook事件已跳过: ReadOneMinute (本72小时内已发送)');
             }
             oneMinuteSent = true;
         }
         
         if (!tenMinutesSent && readingTime >= 10) {
-            if (shouldTrackEvent('10m_web')) {
-                fbq('track', '10m_web');
-                console.log('Facebook event sent: 10m_web (user read for 10 minutes)');
+            if (shouldTrackEvent('ReadTenMinutes')) {
+                fbq('trackCustom', 'ReadTenMinutes', {
+                    content_name: 'The Hidden Heiress Divorces the CEO',
+                    content_category: 'Novel',
+                    reading_time: 10
+                });
+                console.log('Facebook事件已发送: ReadTenMinutes (用户阅读10分钟)');
             } else {
-                console.log('Facebook event skipped: 10m_web (already sent within 72 hours)');
+                console.log('Facebook事件已跳过: ReadTenMinutes (本72小时内已发送)');
             }
             tenMinutesSent = true;
         }
@@ -1058,201 +250,25 @@
     });
     </script>
     <noscript><img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id=1355356909503023&ev=PageView&noscript=1"
+    src="https://www.facebook.com/tr?id=747225277772713&ev=PageView&noscript=1"
     /></noscript>
     <!-- End Facebook Pixel Code -->
     
-    <!-- Tracking Parameter Persistence System -->
-    <script>
-    (function() {
-        'use strict';
-        
-        // List of tracking parameters to persist
-        const TRACKING_PARAMS = ['fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id'];
-        const STORAGE_KEY = 'tracking_params';
-        const STORAGE_EXPIRY_KEY = 'tracking_params_expiry';
-        const EXPIRY_HOURS = 24; // 24 hours expiration
-        
-        /**
-         * Extract tracking parameters from URL
-         */
-        function extractTrackingParams(url) {
-            const params = {};
-            try {
-                const urlObj = new URL(url);
-                TRACKING_PARAMS.forEach(param => {
-                    const value = urlObj.searchParams.get(param);
-                    if (value) {
-                        params[param] = value;
-                    }
-                });
-            } catch (e) {
-                console.error('URL parsing failed:', e);
-            }
-            return params;
-        }
-        
-        /**
-         * Save tracking parameters to localStorage
-         */
-        function saveTrackingParams(params) {
-            if (Object.keys(params).length === 0) return;
-            
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(params));
-                const expiryTime = Date.now() + (EXPIRY_HOURS * 60 * 60 * 1000);
-                localStorage.setItem(STORAGE_EXPIRY_KEY, expiryTime.toString());
-                console.log('Tracking parameters saved:', params);
-            } catch (e) {
-                console.error('Failed to save tracking parameters:', e);
-            }
-        }
-        
-        /**
-         * Read tracking parameters from localStorage
-         */
-        function loadTrackingParams() {
-            try {
-                const expiryTime = localStorage.getItem(STORAGE_EXPIRY_KEY);
-                if (expiryTime && Date.now() > parseInt(expiryTime)) {
-                    // Expired, clearing
-                    localStorage.removeItem(STORAGE_KEY);
-                    localStorage.removeItem(STORAGE_EXPIRY_KEY);
-                    console.log('Tracking parameters expired and cleared');
-                    return {};
-                }
-                
-                const stored = localStorage.getItem(STORAGE_KEY);
-                if (stored) {
-                    const params = JSON.parse(stored);
-                    console.log('Loaded tracking parameters from storage:', params);
-                    return params;
-                }
-            } catch (e) {
-                console.error('Failed to read tracking parameters:', e);
-            }
-            return {};
-        }
-        
-        /**
-         * Add tracking parameters to links
-         */
-        function addTrackingParamsToUrl(url, params) {
-            if (Object.keys(params).length === 0) return url;
-            
-            try {
-                const urlObj = new URL(url, window.location.origin);
-                
-                // Only process same-domain links
-                if (urlObj.origin !== window.location.origin) {
-                    return url;
-                }
-                
-                // Add parameters
-                Object.keys(params).forEach(key => {
-                    if (!urlObj.searchParams.has(key)) {
-                        urlObj.searchParams.set(key, params[key]);
-                    }
-                });
-                
-                return urlObj.toString();
-            } catch (e) {
-                console.error('Failed to add tracking parameters:', e);
-                return url;
-            }
-        }
-        
-        /**
-         * Process all links on the page
-         */
-        function processPageLinks(params) {
-            if (Object.keys(params).length === 0) return;
-            
-            // Process all <a> tags
-            const links = document.querySelectorAll('a[href]');
-            links.forEach(link => {
-                const href = link.getAttribute('href');
-                if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
-                    const newHref = addTrackingParamsToUrl(href, params);
-                    if (newHref !== href) {
-                        link.setAttribute('href', newHref);
-                    }
-                }
-            });
-            
-            console.log(`Processed {0} links`);
-        }
-        
-        /**
-         * Initialize tracking parameter system
-         */
-        function initTrackingSystem() {
-            // 1. Check if current URL has new tracking parameters
-            const currentParams = extractTrackingParams(window.location.href);
-            
-            // 2. If new parameters exist, save them (new parameters take priority)
-            if (Object.keys(currentParams).length > 0) {
-                saveTrackingParams(currentParams);
-                console.log('New tracking parameters detected and storage updated');
-            }
-            
-            // 3. Load stored parameters (either newly saved or previously stored)
-            const storedParams = loadTrackingParams();
-            
-            // 4. If parameters need to be persisted, process all page links
-            if (Object.keys(storedParams).length > 0) {
-                // Wait for DOM to fully load
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', () => {
-                        processPageLinks(storedParams);
-                    });
-                } else {
-                    processPageLinks(storedParams);
-                }
-                
-                // Monitor dynamically added links
-                const observer = new MutationObserver(() => {
-                    processPageLinks(storedParams);
-                });
-                
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true
-                });
-            }
-        }
-        
-        // Execute initialization immediately
-        initTrackingSystem();
-    })();
-    </script>
-    
-    <!-- Page Visit Statistics Code -->
+    <!-- Page visit statistics code -->
     <script>
     // Page visit data collection
     function sendPageVisit() {
-        // Get reading limit chapter count (累计章节)
-        const chapterCount = parseInt(localStorage.getItem('readingLimitChapterCount') || '0');
-        
-        // Get ad guide total seen count (累计广告数)
-        const adCount = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
-        
-        // Get ad guide failed ads count (累计失败广告数)
-        const failedAdCount = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
-        
-        // First get user IP address
+        // Get user IP address first
         getUserIP().then(userIP => {
             const data = {
                 page: window.location.href,
                 userAgent: navigator.userAgent,
-                userIP: userIP,
-                chapterCount: chapterCount,      // 累计章节
-                adCount: adCount,                // 累计广告数
-                failedAdCount: failedAdCount     // 累计失败广告数
+                referrer: document.referrer || 'direct',
+                userIP: userIP
             };
             
-            // Send data to Google Apps Script (V7)
-            fetch('https://script.google.com/macros/s/AKfycbySAuD966h8z2JL8g7deGB-1IiSazTqfPeVWFdpb85HxxFthdi-W3YeV3bRVKLzKfjR1A/exec', {
+            // Send data to Google Apps Script
+            fetch('https://script.google.com/macros/s/AKfycbxuCd58gcBzU-T_ipn7HWCrOM3Mex1c3PiHc8FmFIUe6Zm_KxSbkrsgOwyEgWYm1fsEdQ/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1263,17 +279,15 @@
                 console.log('Analytics error:', error);
             });
         }).catch(error => {
-            // If IP retrieval fails, still send other data
+            // If IP acquisition fails, still send other data
             const data = {
                 page: window.location.href,
                 userAgent: navigator.userAgent,
-                userIP: 'Unknown',
-                chapterCount: chapterCount,      // 累计章节
-                adCount: adCount,                // 累计广告数
-                failedAdCount: failedAdCount     // 累计失败广告数
+                referrer: document.referrer || 'direct',
+                userIP: 'Unknown'
             };
             
-            fetch('https://script.google.com/macros/s/AKfycbySAuD966h8z2JL8g7deGB-1IiSazTqfPeVWFdpb85HxxFthdi-W3YeV3bRVKLzKfjR1A/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbxuCd58gcBzU-T_ipn7HWCrOM3Mex1c3PiHc8FmFIUe6Zm_KxSbkrsgOwyEgWYm1fsEdQ/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1306,209 +320,87 @@
                     const ipData = await response.json();
                     return ipData.ip;
                 } catch (error3) {
-                    console.log('IP retrieval failed, using Unknown');
+                    console.log('Failed to get IP, using Unknown');
                     return 'Unknown';
                 }
             }
         }
     }
     
-    // Send visit data after page load
+    // Send ad guide triggered event
+    function sendAdGuideTriggered(eventData) {
+        console.log('Ad guide: Preparing to send event data:', eventData);
+        
+        // Get user IP address first
+        getUserIP().then(userIP => {
+            const data = {
+                eventType: 'ad_guide_triggered',
+                page: window.location.href,
+                userAgent: navigator.userAgent,
+                referrer: document.referrer || 'direct',
+                userIP: userIP,
+                totalAdsSeen: eventData.totalAdsSeen || 0,
+                currentPageAds: eventData.currentPageAds || 0,
+                triggerCount: eventData.triggerCount || 0,
+                maxTriggers: eventData.maxTriggers || 3,
+                timestamp: new Date().toISOString()
+            };
+            
+            console.log('Ad guide: Sending data to Google Apps Script:', data);
+            
+            // Send data to Google Apps Script
+            fetch('https://script.google.com/macros/s/AKfycbxuCd58gcBzU-T_ipn7HWCrOM3Mex1c3PiHc8FmFIUe6Zm_KxSbkrsgOwyEgWYm1fsEdQ/exec', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            }).then(() => {
+                console.log('Ad guide: Data sent successfully (no-cors mode)');
+            }).catch(error => {
+                console.error('Ad guide analytics error:', error);
+            });
+        }).catch(error => {
+            console.warn('Ad guide: IP acquisition failed, sending with Unknown IP');
+            
+            // If IP acquisition fails, still send other data
+            const data = {
+                eventType: 'ad_guide_triggered',
+                page: window.location.href,
+                userAgent: navigator.userAgent,
+                referrer: document.referrer || 'direct',
+                userIP: 'Unknown',
+                totalAdsSeen: eventData.totalAdsSeen || 0,
+                currentPageAds: eventData.currentPageAds || 0,
+                triggerCount: eventData.triggerCount || 0,
+                maxTriggers: eventData.maxTriggers || 3,
+                timestamp: new Date().toISOString()
+            };
+            
+            console.log('Ad guide: Sending data with Unknown IP:', data);
+            
+            fetch('https://script.google.com/macros/s/AKfycbxuCd58gcBzU-T_ipn7HWCrOM3Mex1c3PiHc8FmFIUe6Zm_KxSbkrsgOwyEgWYm1fsEdQ/exec', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            }).then(() => {
+                console.log('Ad guide: Data sent successfully (no-cors mode, Unknown IP)');
+            }).catch(error => {
+                console.error('Ad guide analytics error:', error);
+            });
+        });
+    }
+    
+    // Send page visit data after page load
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', sendPageVisit);
     } else {
         sendPageVisit();
     }
-    </script>
-    
-    <!-- ===== 广告点击监控（返回检测版）===== -->
-    <script>
-    (function() {
-        'use strict';
-        
-        const CONFIG = {
-            scriptUrl: 'https://script.google.com/macros/s/AKfycbySAuD966h8z2JL8g7deGB-1IiSazTqfPeVWFdpb85HxxFthdi-W3YeV3bRVKLzKfjR1A/exec',
-            returnWindow: 50000,  // 50秒返回窗口
-            storageKey: 'ad_total_clicks',
-            debugMode: true
-        };
-        
-        let pageLoadTime = Date.now();
-        let leaveTime = null;
-        let hasAds = false;
-        
-        // 检查广告是否存在
-        function checkAds() {
-            const checkInterval = setInterval(() => {
-                // 支持Google Publisher Tag广告
-                const gptAds = document.querySelectorAll('[id^="div-gpt-ad-"]');
-                let validGPTCount = 0;
-                gptAds.forEach(ad => {
-                    const iframe = ad.querySelector('iframe');
-                    if (iframe && iframe.getBoundingClientRect().height > 0) {
-                        validGPTCount++;
-                    }
-                });
-                
-                // 支持AdSense Direct广告 - 必须排除 unfilled
-                const adsenseAds = document.querySelectorAll('.adsbygoogle');
-                let validAdSenseCount = 0;
-                adsenseAds.forEach(ad => {
-                    const adStatus = ad.getAttribute('data-ad-status');
-                    // 排除明确标记为 unfilled 的广告
-                    if (adStatus !== 'unfilled') {
-                        const iframe = ad.querySelector('iframe');
-                        if (iframe && iframe.getBoundingClientRect().height > 0) {
-                            validAdSenseCount++;
-                        }
-                    }
-                });
-                
-                if (validGPTCount > 0 || validAdSenseCount > 0) {
-                    hasAds = true;
-                    if (CONFIG.debugMode) console.log('[AdClick] ✅ 找到有效广告 (GPT:' + validGPTCount + ', AdSense:' + validAdSenseCount + ')');
-                    clearInterval(checkInterval);
-                }
-            }, 500);
-            setTimeout(() => clearInterval(checkInterval), 10000);
-        }
-        
-        // 页面隐藏时记录离开时间
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                leaveTime = Date.now();
-                if (CONFIG.debugMode) console.log('[AdClick] 👋 用户离开页面');
-            } else {
-                // 页面可见时检查是否应该上报
-                if (leaveTime && hasAds) {
-                    const awayDuration = Date.now() - leaveTime;
-                    if (awayDuration <= CONFIG.returnWindow) {
-                        if (CONFIG.debugMode) console.log(`[AdClick] ✅ 用户返回（离开${Math.round(awayDuration/1000)}秒），记录点击`);
-                        reportClick();
-                    } else {
-                        if (CONFIG.debugMode) console.log(`[AdClick] ⏭️ 离开超过50秒（${Math.round(awayDuration/1000)}秒），忽略`);
-                    }
-                    leaveTime = null;
-                }
-            }
-        });
-        
-        // 上报广告点击
-        function reportClick() {
-            const totalClicks = incrementClicks();
-            const stayDuration = Math.round((Date.now() - pageLoadTime) / 1000);
-            
-            // 优先获取GPT广告信息，其次AdSense Direct
-            let firstAd = document.querySelector('[id^="div-gpt-ad-"]');
-            let adSlot = firstAd ? firstAd.id : '';
-            let adType = 'gpt';
-            
-            // 验证 GPT 广告是否有效
-            if (firstAd) {
-                const iframe = firstAd.querySelector('iframe');
-                if (!iframe || iframe.getBoundingClientRect().height === 0) {
-                    firstAd = null;
-                }
-            }
-            
-            if (!firstAd) {
-                // 查找有效的 AdSense Direct 广告 - 排除 unfilled
-                const adsenseAds = document.querySelectorAll('.adsbygoogle');
-                for (let ad of adsenseAds) {
-                    const adStatus = ad.getAttribute('data-ad-status');
-                    if (adStatus !== 'unfilled') {
-                        const iframe = ad.querySelector('iframe');
-                        if (iframe && iframe.getBoundingClientRect().height > 0) {
-                            firstAd = ad;
-                            adSlot = ad.getAttribute('data-ad-slot') || 'adsense-unknown';
-                            adType = 'adsense';
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            if (!firstAd) {
-                adSlot = 'no-ad-found';
-                adType = 'none';
-            }
-            
-            const adPosition = firstAd ? Math.round(firstAd.getBoundingClientRect().top + window.scrollY) : 0;
-            
-            const data = {
-                timestamp: new Date().toISOString(),
-                eventType: 'ad_click',
-                novel: 'The Hidden Heiress Divorces the CEO',
-                chapter: '178',
-                pageUrl: window.location.href,
-                adSlot: adSlot,
-                adPosition: adPosition,
-                scrollDepth: Math.round(window.scrollY),
-                userIP: '',
-                userAgent: navigator.userAgent,
-                screenSize: `${window.screen.width}x${window.screen.height}`,
-                stayDuration: stayDuration,
-                totalClickCount: totalClicks,
-                clickSource: 'return_50s'
-            };
-            
-            sendData(data);
-        }
-        
-        // 发送数据
-        async function sendData(data) {
-            try {
-                if (typeof getUserIP === 'function') {
-                    data.userIP = await getUserIP();
-                } else {
-                    try {
-                        const res = await fetch('https://api.ipify.org?format=json');
-                        const json = await res.json();
-                        data.userIP = json.ip;
-                    } catch (e) {
-                        data.userIP = 'Unknown';
-                    }
-                }
-                
-                const payload = JSON.stringify(data);
-                
-                fetch(CONFIG.scriptUrl, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {'Content-Type': 'application/json'},
-                    body: payload
-                });
-                
-                if (CONFIG.debugMode) console.log('[AdClick] 📡 已上报');
-                
-                if (typeof gtag !== 'undefined') {
-                    gtag('event', 'ad_click', {
-                        ad_slot: data.adSlot,
-                        total_clicks: data.totalClickCount
-                    });
-                }
-            } catch (error) {
-                if (CONFIG.debugMode) console.log('[AdClick] ❌ 发送失败:', error);
-            }
-        }
-        
-        // 累计点击次数
-        function incrementClicks() {
-            try {
-                let total = parseInt(localStorage.getItem(CONFIG.storageKey) || '0');
-                total++;
-                localStorage.setItem(CONFIG.storageKey, total.toString());
-                return total;
-            } catch (e) {
-                return 0;
-            }
-        }
-        
-        // 初始化
-        checkAds();
-        if (CONFIG.debugMode) console.log('[AdClick] 🚀 监控启动：离开50秒内返回 = 广告点击');
-        
-    })();
     </script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1530,241 +422,6 @@
             --text-color: #E5E5EA;
             --secondary-bg: #2C2C2E;
             --border-color: #38383A;
-        }
-        
-        /* ===== Reading Limit Cooldown Overlay ===== */
-        #cooldown-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 999999;
-            animation: fadeIn 0.3s ease-in;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .cooldown-container {
-            text-align: center;
-            max-width: 500px;
-            padding: 40px 30px;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            animation: slideUp 0.5s ease-out;
-        }
-        
-        @keyframes slideUp {
-            from {
-                transform: translateY(50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        
-        .cooldown-icon {
-            font-size: 80px;
-            margin-bottom: 20px;
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        
-        .cooldown-title {
-            color: #ffffff;
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 15px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        
-        .cooldown-message {
-            color: #e0e0e0;
-            font-size: 16px;
-            margin-bottom: 25px;
-            line-height: 1.6;
-        }
-        
-        .chapters-read {
-            color: #ffd700;
-            font-weight: 700;
-            font-size: 18px;
-        }
-        
-        .cooldown-timer {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 20px;
-            border-radius: 12px;
-            margin: 25px 0;
-        }
-        
-        .timer-value {
-            font-size: 48px;
-            font-weight: 700;
-            color: #ffd700;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 3px;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-        }
-        
-        .cooldown-hint {
-            color: #e0e0e0;
-            font-size: 14px;
-            margin-bottom: 20px;
-            line-height: 1.8;
-        }
-        
-        .time-remaining {
-            color: #ffd700;
-            font-weight: 700;
-        }
-        
-        .cooldown-progress {
-            background: rgba(0, 0, 0, 0.3);
-            height: 8px;
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 20px 0;
-        }
-        
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #4CAF50, #8BC34A);
-            border-radius: 4px;
-            transition: width 1s linear;
-            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-        }
-        
-        .cooldown-footer {
-            color: #b0b0b0;
-            font-size: 12px;
-            margin-top: 25px;
-            font-style: italic;
-        }
-        
-        /* Mobile responsiveness */
-        @media (max-width: 600px) {
-            .cooldown-container {
-                margin: 20px;
-                padding: 30px 20px;
-            }
-            
-            .cooldown-icon {
-                font-size: 60px;
-            }
-            
-            .cooldown-title {
-                font-size: 22px;
-            }
-            
-            .timer-value {
-                font-size: 36px;
-            }
-        }
-        
-        /* ===== Ad Protection Overlay ===== */
-        #ad-protection-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 999999;
-            animation: fadeIn 0.3s ease-in;
-        }
-        
-        .ad-protection-container {
-            text-align: center;
-            max-width: 500px;
-            padding: 40px 30px;
-            background: linear-gradient(135deg, #c72c41 0%, #d5566c 100%);
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            animation: slideUp 0.5s ease-out;
-        }
-        
-        .ad-protection-icon {
-            font-size: 80px;
-            margin-bottom: 20px;
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        .ad-protection-title {
-            color: #ffffff;
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 15px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        
-        .ad-protection-message {
-            color: #e0e0e0;
-            font-size: 16px;
-            margin-bottom: 25px;
-            line-height: 1.6;
-        }
-        
-        .ad-protection-timer {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 20px;
-            border-radius: 12px;
-            margin: 25px 0;
-        }
-        
-        .ad-protection-hint {
-            color: #e0e0e0;
-            font-size: 14px;
-            margin-bottom: 20px;
-            line-height: 1.8;
-        }
-        
-        .ad-protection-progress {
-            background: rgba(0, 0, 0, 0.3);
-            height: 8px;
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 20px 0;
-        }
-        
-        .ad-protection-footer {
-            color: #b0b0b0;
-            font-size: 12px;
-            margin-top: 25px;
-            font-style: italic;
-        }
-        
-        /* Mobile responsiveness for ad protection */
-        @media (max-width: 600px) {
-            .ad-protection-container {
-                margin: 20px;
-                padding: 30px 20px;
-            }
-            
-            .ad-protection-icon {
-                font-size: 60px;
-            }
-            
-            .ad-protection-title {
-                font-size: 22px;
-            }
         }
 
         * {
@@ -1907,11 +564,12 @@
         }
 
         footer {
-            height: var(--footer-height);
+            min-height: var(--footer-height);
             background-color: var(--bg-color);
             border-top: 1px solid var(--border-color);
             display: flex;
             align-items: center;
+            padding-bottom: 100px;
         }
 
         .footer-content {
@@ -2050,6 +708,54 @@
             }
         }
     </style>
+    
+    <!-- Schema.org Structured Data for Article -->
+    
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Chapter 178 - The Hidden Heiress Divorces the CEO",
+        "alternativeHeadline": "Chapter 178: Chapter 178",
+        "author": {
+            "@type": "Person",
+            "name": "Unknown Author"
+        },
+        "datePublished": "2025-12-31T09:53:00.392248",
+        "dateModified": "2025-12-31T09:53:00.392248",
+        "publisher": {
+            "@type": "Organization",
+            "name": "NovelVibe",
+            "url": "https://novel.234xi.com/",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://novel.234xi.com//assets/images/logo.png"
+            }
+        },
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https://novel.234xi.com//novels/the-hidden-heiress-divorces-the-ceo/chapter-178.html"
+        },
+        "url": "https://novel.234xi.com//novels/the-hidden-heiress-divorces-the-ceo/chapter-178.html",
+        
+        "image": {
+            "@type": "ImageObject",
+            "url": "/covers/the-hidden-heiress-divorces-the-ceo-wechat_2025-09-23_154056_444.png"
+        },
+        
+        "articleSection": "Chapter",
+        "wordCount": "345",
+        "isPartOf": {
+            "@type": "Book",
+            "name": "The Hidden Heiress Divorces the CEO",
+            "author": {
+                "@type": "Person",
+                "name": "Unknown Author"
+            }
+        }
+    }
+    </script>
+    
 </head>
 <body>
     <header>
@@ -2077,102 +783,200 @@
         <div class="container">
             <h1 class="chapter-title">Chapter 178</h1>
             <div class="content font-medium">
+                
+                
                 <p>Cassandra Winslow saw nothing wrong with her words.</p>
+                
+                <!-- AdSense In-Article Ad after first paragraph -->
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3389384312091761"
+                     crossorigin="anonymous"></script>
+                <ins class="adsbygoogle"
+                     style="display:block; text-align:center;"
+                     data-ad-layout="in-article"
+                     data-ad-format="fluid"
+                     data-ad-client="ca-pub-3389384312091761"
+                     data-ad-slot="9054886952"></ins>
+                <script>
+                     (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+                
+                
+                
+                
                 <p>To her, the moment Edmund Whitaker chose Evelyn Carter over her, their teacher-student bond had already fractured.</p>
+                
+                
+                
+                
                 <p>She pressed her lips together and said bluntly, &#34;Professor, your chosen candidate doesn’t impress me.&#34;</p>
+                
+                
+                
+                
                 <p>Edmund’s expression darkened.</p>
+                
+                
+                
+                
                 <p>Evelyn, noticing this, made her decision. &#34;Ms. Winslow, I accept your challenge.&#34;</p>
+                
+                
+                
+                
                 <p>Cassandra smirked. &#34;Good. At least you have spine. But let me be clear—I won’t hold back. Prepare to lose.&#34;</p>
+                
+                
+                
+                
                 <p>Her confidence was unshakable.</p>
+                
+                
+                
+                
                 <p>Evelyn remained composed. &#34;We’ll see. Though, Ms. Winslow, respect for our mentors should never be forgotten.&#34;</p>
+                
+                
+                
+                
                 <p>Cassandra’s face twisted. &#34;Who do you think you are, lecturing me?&#34;</p>
+                
+                
+                
+                
                 <p>&#34;Not a lecture,&#34; Evelyn countered smoothly. &#34;Just a reminder.&#34;</p>
+                
+                
+                
+                
                 <p>Cassandra shot Edmund a look, her pride stung.</p>
-                <!-- banner1 - AdSense Direct -->
-                <div style='text-align:center; margin: 20px 0;'>
-                  <ins class="adsbygoogle"
-                       style="display:inline-block;width:300px;height:250px"
-                       data-ad-client="ca-pub-8799837421149750"
-                       data-ad-slot="banner1-23329558860"
-                       data-tag-src="gamtg">
-                  </ins>
-                  <script>
-                       (adsbygoogle = window.adsbygoogle || []).push({});
-                  </script>
-                </div>
+                
+                
+                
+                
                 <p>&#34;Professor, I—&#34;</p>
+                
+                
+                
+                
                 <p>He waved her off. &#34;Enough. We’re relics of the past. The stage belongs to you now.&#34;</p>
+                
+                
+                
+                
                 <p>His gaze shifted between them. &#34;Prove yourselves. The audience will decide who deserves the title.&#34;</p>
+                
+                
+                
+                
                 <p>Cassandra’s eyes gleamed with ruthless determination.</p>
+                
+                
+                
+                
                 <p>She had to win.</p>
+                
+                
+                
+                
                 <p>&#34;Evelyn, let’s settle this with skill. Three days. Bring your best work—if you even have any.&#34;</p>
-                <!-- banner2 - AdSense Direct -->
-                <div style='text-align:center; margin: 20px 0;'>
-                  <ins class="adsbygoogle"
-                       style="display:inline-block;width:300px;height:250px"
-                       data-ad-client="ca-pub-8799837421149750"
-                       data-ad-slot="banner2-23329558860"
-                       data-tag-src="gamtg">
-                  </ins>
-                  <script>
-                       (adsbygoogle = window.adsbygoogle || []).push({});
-                  </script>
-                </div>
+                
+                
+                
+                
                 <p>Evelyn didn’t flinch. &#34;Agreed. May the best design speak for itself.&#34;</p>
+                
+                
+                
+                
                 <p>Their locked gazes crackled with tension.</p>
+                
+                
+                
+                
                 <p>Without another word, Cassandra spun on her heel and left.</p>
+                
+                
+                
+                
                 <p>The onlookers, seasoned in drama, exchanged amused glances.</p>
+                
+                
+                
+                
                 <p>One man couldn’t resist stirring the pot.</p>
+                
+                
+                
+                
                 <p>&#34;Edmund, don’t be rash. Cassandra’s been your star pupil for years. Why humiliate her for a novice?&#34;</p>
-                <!-- banner6-23329558860 - AdSense Direct -->
-                <div style='text-align:center; margin: 20px 0;'>
-                  <ins class="adsbygoogle"
-                       style="display:inline-block;width:300px;height:250px"
-                       data-ad-client="ca-pub-8799837421149750"
-                       data-ad-slot="banner6-23329558860"
-                       data-tag-src="gamtg">
-                  </ins>
-                  <script>
-                       (adsbygoogle = window.adsbygoogle || []).push({});
-                  </script>
-                </div>
+                
+                
+                
+                
                 <p>His mocking eyes flicked to Evelyn. &#34;The outcome’s obvious. Though…&#34; He chuckled. &#34;I suppose you’ll regret this.&#34;</p>
+                
+                
+                
+                
                 <p>The crowd tittered. Only Edmund remained unfazed.</p>
+                
+                
+                
+                
                 <p>&#34;Patience. The results aren’t in yet. Don’t celebrate prematurely—the slowest arrow often strikes truest.&#34;</p>
+                
+                
+                
+                
                 <p>No one dared argue.</p>
+                
+                
+                
+                
                 <p>&#34;Fine. We’ll see in three days.&#34;</p>
+                
+                
+                
+                
                 <p>As the room emptied, only Evelyn, Olivia Sinclair, and Edmund remained.</p>
-                <!-- banner9-23329558860 - AdSense Direct -->
-                <div style='text-align:center; margin: 20px 0;'>
-                  <ins class="adsbygoogle"
-                       style="display:inline-block;width:300px;height:250px"
-                       data-ad-client="ca-pub-8799837421149750"
-                       data-ad-slot="banner9-23329558860"
-                       data-tag-src="gamtg">
-                  </ins>
-                  <script>
-                       (adsbygoogle = window.adsbygoogle || []).push({});
-                  </script>
-                </div>
+                
+                
+                
+                
                 <p>Olivia, ever perceptive, excused herself. &#34;I’ll wait in the car.&#34;</p>
+                
+                
+                
+                
                 <p>Alone, Evelyn finally voiced her doubt.</p>
+                
+                
+                
+                
                 <p>&#34;Professor… why me?&#34;</p>
+                
+                
+                
+                
                 <p>Edmund cut her off gently. &#34;Don’t overthink it. Just create.&#34;</p>
+                
+                
+                
+                
                 <p>His faith was unwavering.</p>
+                
+                
+                
+                
                 <p>Evelyn swallowed her questions. She wouldn’t fail him.</p>
+                
+                
+                
+                
                 <p>&#34;I won’t let you down.&#34;</p>
-                <!-- banner5-23329558860 - AdSense Direct -->
-                <div style='text-align:center; margin: 20px 0;'>
-                  <ins class="adsbygoogle"
-                       style="display:inline-block;width:300px;height:250px"
-                       data-ad-client="ca-pub-8799837421149750"
-                       data-ad-slot="banner5-23329558860"
-                       data-tag-src="gamtg">
-                  </ins>
-                  <script>
-                       (adsbygoogle = window.adsbygoogle || []).push({});
-                  </script>
-                </div>
+                
+                
+                
             </div>
             
             <div class="font-controls">
@@ -4316,22 +3120,236 @@
             }
         }
 
+        // Facebook Pixel: Track first Next button click
+        let nextClickTracked = false;
+        const nextChapterBtn = document.getElementById('next-chapter');
+        
+        if (nextChapterBtn && !nextChapterBtn.disabled) {
+            nextChapterBtn.addEventListener('click', function(e) {
+                // Track first click event
+                if (!nextClickTracked) {
+                    if (typeof shouldTrackEvent !== 'undefined' && shouldTrackEvent('FirstNextClick')) {
+                        if (typeof fbq !== 'undefined') {
+                            fbq('trackCustom', 'FirstNextClick', {
+                                content_name: 'The Hidden Heiress Divorces the CEO',
+                                content_category: 'Novel',
+                                chapter_number: 178
+                            });
+                            console.log('Facebook事件已发送: FirstNextClick (首次点击下一章)');
+                        }
+                    } else {
+                        console.log('Facebook事件已跳过: FirstNextClick (本72小时内已发送)');
+                    }
+                    nextClickTracked = true;
+                }
+            });
+        }
+
         // Keyboard navigation
         document.addEventListener('keydown', function(e) {
             if (e.key === 'ArrowLeft') {
                 const prevBtn = document.getElementById('prev-chapter');
                 if (prevBtn && !prevBtn.disabled) {
-                    window.location.href = prevBtn.href;
+                    window.location.href = addTrackingParams(prevBtn.href);
                 }
             } else if (e.key === 'ArrowRight') {
                 const nextBtn = document.getElementById('next-chapter');
                 if (nextBtn && !nextBtn.disabled) {
-                    window.location.href = nextBtn.href;
+                    // Track first next click via keyboard
+                    if (!nextClickTracked) {
+                        if (typeof shouldTrackEvent !== 'undefined' && shouldTrackEvent('FirstNextClick')) {
+                            if (typeof fbq !== 'undefined') {
+                                fbq('trackCustom', 'FirstNextClick', {
+                                    content_name: 'The Hidden Heiress Divorces the CEO',
+                                    content_category: 'Novel',
+                                    chapter_number: 178,
+                                    click_type: 'keyboard'
+                                });
+                                console.log('Facebook事件已发送: FirstNextClick (首次点击下一章-键盘)');
+                            }
+                        }
+                        nextClickTracked = true;
+                    }
+                    window.location.href = addTrackingParams(nextBtn.href);
                 }
             } else if (e.key === 'Escape') {
                 closeSidebarFunc();
             }
         });
+
+        // ===== Facebook Tracking Parameters Preservation System =====
+        
+        /**
+         * 追踪参数管理系统
+         * 目标：保持 Facebook 等渠道的追踪参数在页面跳转时传递
+         * 优先级：URL 中的新参数 > 无参数（不添加旧参数）
+         */
+        
+        // Facebook 和其他渠道的追踪参数列表
+        const TRACKING_PARAMS = [
+            'fbclid',           // Facebook Click ID
+            'utm_source',       // 流量来源
+            'utm_medium',       // 流量媒介
+            'utm_campaign',     // 营销活动
+            'utm_term',         // 关键词
+            'utm_content',      // 内容标识
+            'utm_id',           // 活动ID
+            'gclid',            // Google Click ID
+            'msclkid',          // Microsoft Click ID
+            'ttclid'            // TikTok Click ID
+        ];
+        
+        /**
+         * 从 URL 中提取追踪参数
+         */
+        function extractTrackingParams(url) {
+            const urlObj = new URL(url, window.location.origin);
+            const params = {};
+            let hasParams = false;
+            
+            TRACKING_PARAMS.forEach(param => {
+                const value = urlObj.searchParams.get(param);
+                if (value) {
+                    params[param] = value;
+                    hasParams = true;
+                }
+            });
+            
+            return hasParams ? params : null;
+        }
+        
+        /**
+         * 保存当前 URL 中的追踪参数（如果有新参数）
+         */
+        function saveCurrentTrackingParams() {
+            const currentParams = extractTrackingParams(window.location.href);
+            
+            if (currentParams) {
+                // 有新的追踪参数，保存它们
+                localStorage.setItem('trackingParams', JSON.stringify(currentParams));
+                const timestamp = Date.now();
+                localStorage.setItem('trackingParamsTimestamp', timestamp.toString());
+                console.log('📊 保存新的追踪参数:', currentParams);
+                return true;
+            }
+            
+            return false;
+        }
+        
+        /**
+         * 获取存储的追踪参数（带过期检查）
+         */
+        function getStoredTrackingParams() {
+            try {
+                const paramsStr = localStorage.getItem('trackingParams');
+                const timestamp = localStorage.getItem('trackingParamsTimestamp');
+                
+                if (!paramsStr || !timestamp) {
+                    return null;
+                }
+                
+                // 检查是否在 24 小时内（Facebook 会话通常在 24 小时内有效）
+                const age = Date.now() - parseInt(timestamp);
+                const twentyFourHours = 24 * 60 * 60 * 1000;
+                
+                if (age > twentyFourHours) {
+                    // 参数已过期，清除
+                    localStorage.removeItem('trackingParams');
+                    localStorage.removeItem('trackingParamsTimestamp');
+                    console.log('📊 追踪参数已过期（>24小时），已清除');
+                    return null;
+                }
+                
+                return JSON.parse(paramsStr);
+            } catch (error) {
+                console.error('获取追踪参数失败:', error);
+                return null;
+            }
+        }
+        
+        /**
+         * 为链接添加追踪参数
+         * 规则：
+         * 1. 如果目标 URL 已有追踪参数，不修改（新参数优先）
+         * 2. 如果目标 URL 没有参数，且有存储的参数，则添加存储的参数
+         * 3. 如果都没有，返回原链接
+         */
+        function addTrackingParams(url) {
+            try {
+                const urlObj = new URL(url, window.location.origin);
+                
+                // 检查目标 URL 是否已经有追踪参数
+                const hasExistingParams = TRACKING_PARAMS.some(param => 
+                    urlObj.searchParams.has(param)
+                );
+                
+                if (hasExistingParams) {
+                    // 目标 URL 已有参数，不修改
+                    console.log('📊 目标链接已有追踪参数，保持不变:', url);
+                    return url;
+                }
+                
+                // 获取存储的参数
+                const storedParams = getStoredTrackingParams();
+                
+                if (storedParams) {
+                    // 添加存储的参数到目标 URL
+                    Object.keys(storedParams).forEach(key => {
+                        urlObj.searchParams.set(key, storedParams[key]);
+                    });
+                    
+                    const newUrl = urlObj.toString();
+                    console.log('📊 添加追踪参数到链接:', newUrl);
+                    return newUrl;
+                }
+                
+                // 没有可用参数，返回原链接
+                return url;
+            } catch (error) {
+                console.error('添加追踪参数失败:', error);
+                return url;
+            }
+        }
+        
+        /**
+         * 初始化追踪参数系统
+         */
+        function initTrackingSystem() {
+            // 保存当前页面的追踪参数（如果有）
+            saveCurrentTrackingParams();
+            
+            // 为所有章节导航链接添加追踪参数
+            document.querySelectorAll('a[href*="/chapter-"], #prev-chapter, #next-chapter').forEach(link => {
+                if (link.href) {
+                    const originalHref = link.href;
+                    
+                    // 点击时动态添加参数
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const newHref = addTrackingParams(originalHref);
+                        window.location.href = newHref;
+                    });
+                }
+            });
+            
+            // 为目录中的章节链接添加追踪参数
+            document.querySelectorAll('.chapter-list a').forEach(link => {
+                if (link.href) {
+                    const originalHref = link.href;
+                    
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const newHref = addTrackingParams(originalHref);
+                        window.location.href = newHref;
+                    });
+                }
+            });
+            
+            console.log('📊 追踪参数系统已初始化');
+        }
+        
+        // 页面加载时初始化追踪系统
+        document.addEventListener('DOMContentLoaded', initTrackingSystem);
 
         // Record reading history
         document.addEventListener('DOMContentLoaded', function() {
@@ -4351,7 +3369,7 @@
             // Add to beginning
             history.unshift(novelData);
             
-            // Keep only the last 5 records
+            // Keep only recent 5 records
             history = history.slice(0, 5);
             
             localStorage.setItem('readingHistory', JSON.stringify(history));
@@ -4363,24 +3381,20 @@
                 // Detect PC browser environment
                 this.isPCBrowser = this.detectPCBrowser();
                 
-                // If PC browser, return directly without initializing system
+                // If PC browser, return without initializing system
                 if (this.isPCBrowser) {
-                    console.log('Ad Guide: PC browser detected, system will not activate');
+                    console.log('Ad guide: PC browser detected, system will not activate');
                     return;
                 }
                 
-                // Key Point 1: Guide Trigger Mechanism
-                this.MIN_INITIAL_ADS = 1; // Minimum ads for first trigger (only used on very first visit)
-                this.MAX_INITIAL_ADS = 15; // Maximum ads for first trigger (only used on very first visit)
-                this.MIN_RANDOM_ADS = 15; // Minimum random ads for next trigger
-                this.MAX_RANDOM_ADS = 40; // Maximum random ads for next trigger
-                this.TRIGGER_PROBABILITY = 0.80; // 80% trigger probability
-                this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN = 5; // Enter long cooldown after 5 accumulated triggers
-                this.LONG_COOLDOWN_HOURS = 2; // Long cooldown 2 hours
-                this.INACTIVITY_RESET_MINUTES = 60; // Auto reset after 60 minutes of inactivity
-                
-                // Dynamic trigger threshold - get existing threshold or generate new one
-                this.nextTriggerThreshold = this.getNextTriggerThreshold();
+                // Key point 1: Guide trigger mechanism
+                this.REQUIRED_ADS = 500; // Required cumulative ad count across pages
+                this.TRIGGER_PROBABILITY = 0.01; // 78%% trigger probability
+                this.COOLDOWN_MINUTES = 100; // 10 minutes cooldown time
+
+                // New: Trigger count limit mechanism
+                this.MAX_TRIGGERS = 1; // Maximum trigger count limit
+                this.TRIGGER_COOLDOWN_HOURS = 3; // 3 hour cooldown after reaching max triggers
                 
                 // State management
                 this.currentPageAds = []; // Current page ads
@@ -4389,14 +3403,15 @@
                 this.observer = null;
                 this.debugPanel = null;
                 
-                // Cross-page accumulated data
+                // Cross-page cumulative data
                 this.totalAdsSeen = this.getTotalAdsSeen();
+                this.triggerCount = this.getTriggerCount();
                 
                 // Scroll monitoring during guide
                 this.scrollMonitorInterval = null;
                 this.targetScrollPosition = null;
                 
-                // Key Point 5: Debug mode related
+                // Key point 5: Debug mode related
                 this.themeClickCount = 0;
                 this.themeClickTimer = null;
                 
@@ -4407,7 +3422,7 @@
             detectPCBrowser() {
                 const userAgent = navigator.userAgent.toLowerCase();
                 
-                // Detect mobile device identifiers
+                // Detect mobile device keywords
                 const mobileKeywords = [
                     'mobile', 'android', 'iphone', 'ipad', 'ipod',
                     'blackberry', 'iemobile', 'opera mini', 'webos'
@@ -4415,16 +3430,16 @@
                 
                 const isMobile = mobileKeywords.some(keyword => userAgent.includes(keyword));
                 
-                // Detect touchscreen support
+                // Detect touch screen support
                 const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
                 
-                // Detect screen size (width less than 1024px usually indicates mobile device)
+                // Detect screen size (less than 1024px width usually means mobile device)
                 const isSmallScreen = window.screen.width < 1024;
                 
-                // If mobile device, has touchscreen, or small screen, it is not a PC browser
+                // If mobile device or has touch screen or small screen, not PC browser
                 const isPCBrowser = !isMobile && !hasTouchScreen && !isSmallScreen;
                 
-                console.log('Ad Guide: Browser environment detection', {
+                console.log('Ad guide: Browser environment detection', {
                     userAgent: userAgent,
                     isMobile: isMobile,
                     hasTouchScreen: hasTouchScreen,
@@ -4436,183 +3451,77 @@
                 return isPCBrowser;
             }
 
-            // Get cross-page accumulated ad count
+            // Get cross-page cumulative ad count
             getTotalAdsSeen() {
                 const stored = localStorage.getItem('adGuideTotalSeen');
                 return stored ? parseInt(stored) : 0;
             }
 
-            // Save cross-page accumulated ad count
+            // Save cross-page cumulative ad count
             saveTotalAdsSeen() {
                 localStorage.setItem('adGuideTotalSeen', this.totalAdsSeen.toString());
             }
 
-            // Get cross-page accumulated failed ad count
-            getTotalFailedAds() {
-                const stored = localStorage.getItem('adGuideFailedAds');
-                return stored ? parseInt(stored) : 0;
-            }
-
-            // Save cross-page accumulated failed ad count
-            saveTotalFailedAds(count) {
-                localStorage.setItem('adGuideFailedAds', count.toString());
-            }
-
-            // Get local date string (YYYY-MM-DD format)
-            getLocalDateString() {
-                return new Date().toLocaleDateString('en-CA'); // ISO 8601 format
-            }
-
-            // Check and perform daily reset
-            checkDailyReset() {
-                const storedDate = localStorage.getItem('adGuideDate');
-                const today = this.getLocalDateString();
-                
-                if (storedDate !== today) {
-                    console.log(`Ad Guide: Date changed from ${storedDate} to ${today}, performing daily reset`);
-                    this.resetDailyData();
-                    localStorage.setItem('adGuideDate', today);
-                }
-            }
-
-            // Reset all daily data (called when date changes)
-            resetDailyData() {
-                // Clear all ad guide related data
-                localStorage.removeItem('adGuideTotalSeen');
-                localStorage.removeItem('adGuideFailedAds');
-                localStorage.removeItem('adGuideNextThreshold');
-                localStorage.removeItem('adGuideTriggerCount');
-                localStorage.removeItem('adGuideLongCooldownStart');
-                localStorage.removeItem('adGuideJustExitedCooldown');
-                
-                // Reset instance variables
-                this.totalAdsSeen = 0;
-                this.nextTriggerThreshold = Math.floor(Math.random() * (this.MAX_INITIAL_ADS - this.MIN_INITIAL_ADS + 1)) + this.MIN_INITIAL_ADS;
-                this.currentPageAds = [];
-                
-                console.log('Ad Guide: Daily data reset completed');
-            }
-
-            // Get next trigger threshold (dynamic)
-            getNextTriggerThreshold() {
-                const stored = localStorage.getItem('adGuideNextThreshold');
-                if (stored) {
-                    return parseInt(stored);
-                }
-                // First time, generate random initial threshold (2-10)
-                return Math.floor(Math.random() * (this.MAX_INITIAL_ADS - this.MIN_INITIAL_ADS + 1)) + this.MIN_INITIAL_ADS;
-            }
-
-            // Save next trigger threshold
-            saveNextTriggerThreshold(threshold) {
-                localStorage.setItem('adGuideNextThreshold', threshold.toString());
-            }
-
-            // Generate random ads count for next trigger (20-40)
-            generateRandomAdsCount() {
-                return Math.floor(Math.random() * (this.MAX_RANDOM_ADS - this.MIN_RANDOM_ADS + 1)) + this.MIN_RANDOM_ADS;
-            }
-
-            // Get accumulated trigger count
+            // Get trigger count
             getTriggerCount() {
                 const stored = localStorage.getItem('adGuideTriggerCount');
                 return stored ? parseInt(stored) : 0;
             }
 
-            // Save accumulated trigger count
-            saveTriggerCount(count) {
-                localStorage.setItem('adGuideTriggerCount', count.toString());
+            // Save trigger count
+            saveTriggerCount() {
+                localStorage.setItem('adGuideTriggerCount', this.triggerCount.toString());
             }
 
-            // Get long cooldown start time
-            getLongCooldownStart() {
-                const stored = localStorage.getItem('adGuideLongCooldownStart');
+            // Get trigger cooldown reset time
+            getTriggerCooldownReset() {
+                const stored = localStorage.getItem('adGuideTriggerCooldownReset');
                 return stored ? parseInt(stored) : 0;
             }
 
-            // Save long cooldown start time
-            saveLongCooldownStart(timestamp) {
-                localStorage.setItem('adGuideLongCooldownStart', timestamp.toString());
+            // Save trigger cooldown reset time
+            saveTriggerCooldownReset(timestamp) {
+                localStorage.setItem('adGuideTriggerCooldownReset', timestamp.toString());
             }
 
-            // Check if in long cooldown period
-            isInLongCooldown() {
-                const longCooldownStart = this.getLongCooldownStart();
-                if (!longCooldownStart) return false;
-                
-                const longCooldownMs = this.LONG_COOLDOWN_HOURS * 60 * 60 * 1000;
-                const timeSinceLongCooldown = Date.now() - longCooldownStart;
-                
-                if (timeSinceLongCooldown >= longCooldownMs) {
-                    // Long cooldown ended, reset trigger count and long cooldown time
-                    this.saveTriggerCount(0);
-                    localStorage.removeItem('adGuideLongCooldownStart');
-                    // Set flag: just exited long cooldown, next trigger should skip
-                    localStorage.setItem('adGuideJustExitedCooldown', 'true');
-                    return false;
-                }
-                
-                return true;
-            }
-
-            // Update last activity time
-            updateLastActivityTime() {
-                localStorage.setItem('adGuideLastActivity', Date.now().toString());
-            }
-
-            // Get last activity time
-            getLastActivityTime() {
-                const stored = localStorage.getItem('adGuideLastActivity');
-                return stored ? parseInt(stored) : 0;
-            }
-
-            // Check inactivity and auto reset
-            checkInactivityReset() {
-                const lastActivity = this.getLastActivityTime();
-                if (!lastActivity) {
-                    // First visit, record time
-                    this.updateLastActivityTime();
-                    return;
-                }
-
-                const inactivityMs = this.INACTIVITY_RESET_MINUTES * 60 * 1000;
-                const timeSinceLastActivity = Date.now() - lastActivity;
-
-                if (timeSinceLastActivity >= inactivityMs) {
-                    console.log(`Ad Guide: User left for more than {0} minutes, auto reset all data`);
-                    this.resetAllData();
-                    // Update activity time
-                    this.updateLastActivityTime();
-                }
-            }
-
-            // Key Point 1: Guide Trigger Mechanism Implementation
+            // Key point 1: Guide trigger mechanism implementation
             init() {
-                // If PC browser, skip initialization
+                // If PC browser, do not execute initialization
                 if (this.isPCBrowser) return;
                 
-                // Check and perform daily reset (date change detection)
-                this.checkDailyReset();
-                
-                // Check if user left for more than 60 minutes, auto reset if so
-                this.checkInactivityReset();
+                // Check if user has been away for more than 60 minutes
+                this.checkAndResetIfLongAbsence();
                 
                 this.setupAdObserver();
                 this.setupDebugMode();
                 this.setupPageVisibilityHandler();
-                this.setupActivityTracking();
                 this.startPeriodicCheck();
-                
-                // Update last activity time
-                this.updateLastActivityTime();
             }
 
-            // Setup user activity tracking
-            setupActivityTracking() {
-                // Periodically update activity time (every 5 seconds)
-                setInterval(() => {
-                    this.updateLastActivityTime();
-                }, 5000);
+            // Check if user has been away for more than 60 minutes and reset if needed
+            checkAndResetIfLongAbsence() {
+                const lastActiveTime = localStorage.getItem('adGuideLastActiveTime');
+                const now = Date.now();
+                
+                if (lastActiveTime) {
+                    const timeSinceLastActive = now - parseInt(lastActiveTime);
+                    const sixtyMinutesInMs = 60 * 60 * 1000; // 60 minutes
+                    
+                    if (timeSinceLastActive > sixtyMinutesInMs) {
+                        console.log(`Ad guide: User was away for ${Math.round(timeSinceLastActive / 60000)} minutes (> 60 min), auto-resetting all data`);
+                        this.resetAllData();
+                    } else {
+                        console.log(`Ad guide: User was away for ${Math.round(timeSinceLastActive / 60000)} minutes (< 60 min), no reset needed`);
+                    }
+                }
+                
+                // Update last active time
+                this.updateLastActiveTime();
+            }
+
+            // Update last active time
+            updateLastActiveTime() {
+                localStorage.setItem('adGuideLastActiveTime', Date.now().toString());
             }
 
             setupAdObserver() {
@@ -4633,18 +3542,8 @@
 
             startAdMonitoring() {
                 const checkForAds = () => {
-                    // Monitor all GPT ad slots - support multiple banners
-                    const gptAdElements = document.querySelectorAll('[id^="div-gpt-ad-"]');
-                    gptAdElements.forEach(ad => {
-                        if (!ad.dataset.guideMonitored) {
-                            ad.dataset.guideMonitored = 'true';
-                            this.observer.observe(ad);
-                        }
-                    });
-                    
-                    // Monitor all AdSense Direct ad slots
-                    const adsenseAdElements = document.querySelectorAll('.adsbygoogle');
-                    adsenseAdElements.forEach(ad => {
+                    const adElements = document.querySelectorAll('.adsbygoogle, ins[data-ad-client]');
+                    adElements.forEach(ad => {
                         if (!ad.dataset.guideMonitored) {
                             ad.dataset.guideMonitored = 'true';
                             this.observer.observe(ad);
@@ -4655,128 +3554,59 @@
                 // Check immediately once
                 checkForAds();
                 
-                // Periodically check for new ads
+                // Check for new ads periodically
                 setInterval(checkForAds, 2000);
             }
 
             checkAdValidity(adElement) {
-                // If PC browser, skip ad detection
+                // If PC browser, do not execute ad detection
                 if (this.isPCBrowser) return;
                 
-                // Skip if already processed (both success and failure)
-                if (adElement.dataset.guideProcessed) return;
-                
-                // Check if ad is valid: height>100px and <=650px and filled
+                // Check if ad is valid: height > 100px and <= 650px and filled
                 const rect = adElement.getBoundingClientRect();
                 const isValidHeight = rect.height > 100 && rect.height <= 650;
-                
-                // Detect ad type
-                const isAdSense = adElement.classList.contains('adsbygoogle');
-                const isGPT = adElement.id && adElement.id.startsWith('div-gpt-ad-');
-                
-                // Update ad fill detection logic - support both GPT and AdSense Direct
-                let isFilled = false;
-                
-                if (isAdSense) {
-                    // AdSense Direct detection
-                    // IMPORTANT: Must check both status attributes
-                    const adsbyStatus = adElement.getAttribute('data-adsbygoogle-status');
-                    const adStatus = adElement.getAttribute('data-ad-status');
-                    
-                    // Explicitly check for unfilled status - this means NO ad
-                    if (adStatus === 'unfilled') {
-                        isFilled = false;
-                    } else if (adsbyStatus === 'done' && adStatus === 'filled') {
-                        // Both status indicators show success
-                        isFilled = true;
-                    } else {
-                        // Fallback: check if iframe exists and has valid height
-                        const iframe = adElement.querySelector('iframe');
-                        if (iframe) {
-                            const iframeRect = iframe.getBoundingClientRect();
-                            isFilled = iframeRect.height > 0;
-                        }
-                    }
-                } else if (isGPT) {
-                    // GPT ad detection (original logic)
-                    // Check if there is a valid iframe (height > 0)
-                    const iframe = adElement.querySelector('iframe');
-                    if (iframe) {
-                        const iframeRect = iframe.getBoundingClientRect();
-                        isFilled = iframeRect.height > 0;
-                    }
-                    
-                    // If no iframe, check other fill indicators
-                    if (!isFilled) {
-                        isFilled = adElement.dataset.adStatus === 'filled' || 
-                                  adElement.innerHTML.includes('googleads') ||
-                                  (adElement.querySelector('[data-google-container-id]') !== null && 
-                                   adElement.querySelector('iframe[title="3rd party ad content"]') !== null) ||
-                                  adElement.innerHTML.includes('data-load-complete="true"');
-                    }
-                }
+                const isFilled = adElement.dataset.adStatus === 'filled' || 
+                                adElement.querySelector('iframe') !== null ||
+                                adElement.innerHTML.includes('googleads');
 
-                // Mark as processed to avoid double counting
-                adElement.dataset.guideProcessed = 'true';
-
-                if (isValidHeight && isFilled) {
-                    // Success: valid and filled ad
-                    if (!this.currentPageAds.includes(adElement)) {
-                        this.currentPageAds.push(adElement);
-                        
-                        // Accumulate total ad count (cross-page)
-                        this.totalAdsSeen++;
-                        this.saveTotalAdsSeen();
-                        
-                        console.log(`Ad Guide: New ad found, current page: ${this.currentPageAds.length}, total: ${this.totalAdsSeen}, threshold: ${this.nextTriggerThreshold}`);
-                        this.updateDebugInfo();
-                        
-                        // Check if trigger condition is met (based on accumulated count reaching threshold)
-                        if (this.totalAdsSeen >= this.nextTriggerThreshold) {
-                            this.considerTriggeringGuide();
-                        }
+                if (isValidHeight && isFilled && !this.currentPageAds.includes(adElement)) {
+                    this.currentPageAds.push(adElement);
+                    
+                    // Accumulate total ad count (cross-page)
+                    this.totalAdsSeen++;
+                    this.saveTotalAdsSeen();
+                    
+                    console.log(`Ad guide: New ad detected, current page: ${this.currentPageAds.length}, total count: ${this.totalAdsSeen}`);
+                    this.updateDebugInfo();
+                    
+                    // Check if trigger condition is met (based on cumulative count)
+                    if (this.totalAdsSeen >= this.REQUIRED_ADS) {
+                        this.considerTriggeringGuide();
                     }
-                } else {
-                    // Failure: invalid height or unfilled ad
-                    const totalFailedAds = this.getTotalFailedAds() + 1;
-                    this.saveTotalFailedAds(totalFailedAds);
-                    console.log(`Ad Guide: Failed ad detected (height: ${rect.height.toFixed(0)}px, filled: ${isFilled}), total failed: ${totalFailedAds}`);
                 }
             }
 
             considerTriggeringGuide() {
-                // Check if in long cooldown period
-                if (this.isInLongCooldown()) {
-                    const longCooldownStart = this.getLongCooldownStart();
-                    const longCooldownMs = this.LONG_COOLDOWN_HOURS * 60 * 60 * 1000;
-                    const remainingMs = longCooldownMs - (Date.now() - longCooldownStart);
-                    const remainingHours = Math.ceil(remainingMs / (60 * 60 * 1000));
-                    console.log(`Ad Guide: In long cooldown, ${remainingHours} hours remaining`);
+                // Check if in trigger count cooldown (2 hours)
+                if (!this.canTriggerByCount()) {
+                    const resetTime = this.getTriggerCooldownReset();
+                    const remainingMs = resetTime - Date.now();
+                    const remainingMinutes = Math.ceil(remainingMs / 60000);
+                    console.log(`Ad guide: Trigger count limit reached (${this.triggerCount}/${this.MAX_TRIGGERS}), in 2-hour cooldown. Remaining: ${remainingMinutes} minutes`);
                     return;
                 }
 
-                // Check if just exited long cooldown - first trigger after cooldown must skip
-                const justExitedCooldown = localStorage.getItem('adGuideJustExitedCooldown');
-                if (justExitedCooldown === 'true') {
-                    console.log('Ad Guide: Just exited long cooldown, skipping first trigger (100%)');
-                    // Clear the flag and generate new threshold
-                    localStorage.removeItem('adGuideJustExitedCooldown');
-                    const randomAdsCount = this.generateRandomAdsCount();
-                    this.nextTriggerThreshold = this.totalAdsSeen + randomAdsCount;
-                    this.saveNextTriggerThreshold(this.nextTriggerThreshold);
-                    console.log(`Ad Guide: Next trigger at ${this.nextTriggerThreshold} ads (need ${randomAdsCount} more)`);
+                // Check regular cooldown time (15 minutes)
+                if (!this.canTrigger()) {
+                    console.log('Ad guide: Still in regular cooldown period (15 minutes)');
                     return;
                 }
 
-                // Probability control: 95% trigger, 5% skip
+                // Probability control: 78% trigger, 22% skip
                 const shouldTrigger = Math.random() < this.TRIGGER_PROBABILITY;
                 if (!shouldTrigger) {
-                    console.log('Ad Guide: Skipped by probability control');
-                    // Generate new random threshold for next attempt
-                    const randomAdsCount = this.generateRandomAdsCount();
-                    this.nextTriggerThreshold = this.totalAdsSeen + randomAdsCount;
-                    this.saveNextTriggerThreshold(this.nextTriggerThreshold);
-                    console.log(`Ad Guide: Next trigger at ${this.nextTriggerThreshold} ads (need ${randomAdsCount} more)`);
+                    console.log('Ad guide: Probability control skip');
+                    this.recordTriggerAttempt();
                     return;
                 }
 
@@ -4784,7 +3614,40 @@
                 this.triggerGuide();
             }
 
-            // Key Point 2: Guide Interaction Flow Implementation
+            canTriggerByCount() {
+                // Check if trigger count has reached limit
+                if (this.triggerCount < this.MAX_TRIGGERS) {
+                    return true;
+                }
+
+                // Check if 2-hour cooldown has expired
+                const resetTime = this.getTriggerCooldownReset();
+                if (Date.now() >= resetTime) {
+                    // Cooldown expired, reset trigger count
+                    console.log('Ad guide: 2-hour cooldown expired, resetting trigger count');
+                    this.triggerCount = 0;
+                    this.saveTriggerCount();
+                    this.saveTriggerCooldownReset(0);
+                    return true;
+                }
+
+                return false;
+            }
+
+            canTrigger() {
+                const lastTrigger = localStorage.getItem('adGuideLastTrigger');
+                if (!lastTrigger) return true;
+                
+                const cooldownMs = this.COOLDOWN_MINUTES * 60 * 1000;
+                const timeSinceLastTrigger = Date.now() - parseInt(lastTrigger);
+                return timeSinceLastTrigger >= cooldownMs;
+            }
+
+            recordTriggerAttempt() {
+                localStorage.setItem('adGuideLastTrigger', Date.now().toString());
+            }
+
+            // Key point 2: Guide interaction flow implementation
             triggerGuide() {
                 // If PC browser, do not trigger guide
                 if (this.isPCBrowser) return;
@@ -4792,39 +3655,35 @@
                 if (this.isGuideActive) return;
                 
                 this.isGuideActive = true;
+                this.recordTriggerAttempt();
                 
-                // Increase trigger count
-                const triggerCount = this.getTriggerCount() + 1;
-                this.saveTriggerCount(triggerCount);
-                console.log(`Ad Guide: Trigger count ${triggerCount}/${this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN}`);
+                // Increment trigger count
+                this.triggerCount++;
+                this.saveTriggerCount();
+                console.log(`Ad guide: Trigger count incremented: ${this.triggerCount}/${this.MAX_TRIGGERS}`);
                 
-                // Generate new random threshold for next trigger
-                const randomAdsCount = this.generateRandomAdsCount();
-                this.nextTriggerThreshold = this.totalAdsSeen + randomAdsCount;
-                this.saveNextTriggerThreshold(this.nextTriggerThreshold);
-                console.log(`Ad Guide: Guide triggered! Next trigger at ${this.nextTriggerThreshold} ads (need ${randomAdsCount} more)`);
-                
-                // Check if long cooldown condition is met
-                if (triggerCount >= this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN) {
-                    this.saveLongCooldownStart(Date.now());
-                    console.log(`Ad Guide: Triggered ${triggerCount} times, entering ${this.LONG_COOLDOWN_HOURS} hour long cooldown`);
+                // If trigger count reaches limit, set 2-hour cooldown
+                if (this.triggerCount >= this.MAX_TRIGGERS) {
+                    const cooldownEndTime = Date.now() + (this.TRIGGER_COOLDOWN_HOURS * 60 * 60 * 1000);
+                    this.saveTriggerCooldownReset(cooldownEndTime);
+                    console.log(`Ad guide: Trigger count limit reached (${this.MAX_TRIGGERS}), entering 2-hour cooldown`);
                 }
                 
-                // Select last valid ad on current page as target
+                // Select the last valid ad on current page as target
                 const targetAd = this.currentPageAds[this.currentPageAds.length - 1];
                 if (!targetAd) {
-                    console.error('Ad Guide: Cannot find target ad on current page');
+                    console.error('Ad guide: Cannot find target ad on current page');
                     return;
                 }
 
-                // View positioning: Scroll to ad center
+                // View positioning: scroll to ad center
                 this.scrollToAdCenter(targetAd);
                 
-                // Show guide after scroll completes
+                // Wait for scroll completion then show guide
                 setTimeout(() => {
                     this.showGuideOverlay(targetAd);
-                    this.restrictUserInteraction(targetAd);
-                    // Start scroll monitoring to prevent user from scrolling away from target position due to bug
+                    this.restrictUserInteraction();
+                    // Start scroll monitoring to prevent user from scrolling away due to bugs
                     this.startScrollMonitoring();
                 }, 500);
             }
@@ -4840,7 +3699,7 @@
                 });
             }
 
-            // Start monitoring scroll position, ensure user stays at target position
+            // Start monitoring scroll position to ensure user stays at target position
             startScrollMonitoring() {
                 if (this.scrollMonitorInterval) {
                     clearInterval(this.scrollMonitorInterval);
@@ -4848,7 +3707,7 @@
                 
                 this.scrollMonitorInterval = setInterval(() => {
                     if (!this.isGuideActive) {
-                        // Guide ended, stop monitoring immediately
+                        // Guide has ended, stop monitoring immediately
                         this.stopScrollMonitoring();
                         return;
                     }
@@ -4858,7 +3717,7 @@
                         const tolerance = 50; // Allow 50px tolerance
                         
                         if (Math.abs(currentScroll - this.targetScrollPosition) > tolerance) {
-                            console.log('Ad Guide: User scroll offset detected, repositioning to target');
+                            console.log('Ad guide: User scroll offset detected, repositioning to target');
                             window.scrollTo({
                                 top: this.targetScrollPosition,
                                 behavior: 'smooth'
@@ -4874,11 +3733,48 @@
                     clearInterval(this.scrollMonitorInterval);
                     this.scrollMonitorInterval = null;
                     this.targetScrollPosition = null;
-                    console.log('Ad Guide: Scroll monitoring stopped');
+                    console.log('Ad guide: Scroll monitoring stopped');
                 }
             }
 
+            // Report guide triggered event
+            reportGuideTriggered() {
+                // Google Analytics 4 event reporting
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', 'ad_guide_triggered', {
+                        'event_category': 'Ad Guide',
+                        'event_label': 'Guide Overlay Shown',
+                        'total_ads_seen': this.totalAdsSeen,
+                        'current_page_ads': this.currentPageAds.length,
+                        'trigger_count': this.triggerCount,
+                        'max_triggers': this.MAX_TRIGGERS,
+                        'value': 1
+                    });
+                }
+                
+                // Send to Google Apps Script
+                if (typeof sendAdGuideTriggered === 'function') {
+                    sendAdGuideTriggered({
+                        totalAdsSeen: this.totalAdsSeen,
+                        currentPageAds: this.currentPageAds.length,
+                        triggerCount: this.triggerCount,
+                        maxTriggers: this.MAX_TRIGGERS
+                    });
+                }
+                
+                console.log('Ad guide: Trigger event reported', {
+                    totalAdsSeen: this.totalAdsSeen,
+                    currentPageAds: this.currentPageAds.length,
+                    triggerCount: this.triggerCount,
+                    maxTriggers: this.MAX_TRIGGERS,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
             showGuideOverlay(targetAd) {
+                // Report guide triggered event
+                this.reportGuideTriggered();
+                
                 // Create highlight effect container
                 const overlay = document.createElement('div');
                 overlay.id = 'ad-guide-overlay';
@@ -4897,7 +3793,7 @@
                 const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
                 const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
                 
-                // Create highlight area - use absolute positioning relative to document
+                // Create highlight area - using absolute positioning relative to document
                 const highlight = document.createElement('div');
                 highlight.style.cssText = `
                     position: absolute;
@@ -4913,7 +3809,7 @@
                     z-index: 14000;
                 `;
 
-                // Create tooltip - use absolute positioning relative to document
+                // Create tooltip - using absolute positioning relative to document
                 const tooltip = document.createElement('div');
                 tooltip.style.cssText = `
                     position: absolute;
@@ -4931,7 +3827,7 @@
                     z-index: 20000;
                     animation: bounce 1s ease-in-out infinite;
                 `;
-                tooltip.textContent = 'Please click an AD and watch it for 10s to keep reading. Thank you!!!👇👇👇 👇👇👇 👇👇👇';
+                tooltip.textContent = 'Please click an AD and watch it for 10s to keep reading. Thank you!!!!👇👇👇 👇👇👇 👇👇👇';
 
                 // Add CSS animation
                 if (!document.getElementById('guide-animation-styles')) {
@@ -4955,10 +3851,12 @@
                 overlay.appendChild(tooltip);
                 document.body.appendChild(overlay);
 
-                // No longer modify ad container styles - fully compliant with Google policies
-                // The ad container remains untouched, guide overlay is completely independent
+                // Ensure ad area can be clicked (set appropriate z-index)
+                targetAd.style.position = 'relative';
+                targetAd.style.zIndex = '15000'; // Below tooltip but above other elements
+                targetAd.style.pointerEvents = 'auto';
 
-                // Listen to scroll events, update tooltip position
+                // Listen for scroll events, update tooltip position
                 this.updateOverlayPosition = () => {
                     if (!overlay || !overlay.parentNode) return;
                     
@@ -4975,132 +3873,37 @@
                     tooltip.style.left = `${newRect.left + newScrollLeft}px`;
                 };
                 
-                // Use passive listener to avoid interfering with scroll monitoring logic
+                // Use passive listeners to avoid interfering with scroll monitoring logic
                 window.addEventListener('scroll', this.updateOverlayPosition, { passive: true });
                 window.addEventListener('resize', this.updateOverlayPosition, { passive: true });
 
-                // Report Facebook Pixel event when ad guide is triggered
-                this.reportFacebookAdGuideEvent();
-
-                // Report ad guide trigger event to Google Sheets
-                this.reportAdGuideTriggered();
-
-                // Enable clicking on target ad
+                // Allow clicking target ad
                 this.enableAdClick(targetAd);
-            }
-
-            // Report Facebook Pixel event for ad guide trigger
-            reportFacebookAdGuideEvent() {
-                // Check if shouldTrackEvent function exists (from Facebook Pixel code)
-                if (typeof shouldTrackEvent === 'function' && typeof fbq === 'function') {
-                    if (shouldTrackEvent('1_c')) {
-                        fbq('track', '1_c');
-                        console.log('Facebook event sent: 1_c (ad guide popup triggered)');
-                    } else {
-                        console.log('Facebook event skipped: 1_c (already sent within 72 hours)');
-                    }
-                } else {
-                    console.log('Facebook Pixel not available for 1_c event');
-                }
-            }
-
-            // Report ad guide trigger event
-            reportAdGuideTriggered() {
-                const triggerCount = this.getTriggerCount();
-                const isInLongCooldown = this.isInLongCooldown();
-                
-                getUserIP().then(userIP => {
-                    const data = {
-                        eventType: 'ad_guide_triggered',
-                        page: window.location.href,
-                        userAgent: navigator.userAgent,
-                        userIP: userIP,
-                        totalAdsSeen: this.totalAdsSeen,
-                        totalFailedAds: this.getTotalFailedAds(),
-                        currentPageAds: this.currentPageAds.length,
-                        triggerCount: triggerCount,
-                        maxTriggersBeforeLongCooldown: this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN,
-                        longCooldownHours: this.LONG_COOLDOWN_HOURS,
-                        isInLongCooldown: isInLongCooldown,
-                        timestamp: new Date().toISOString()
-                    };
-                    
-                    console.log('Ad Guide: Reporting event data', data);
-                    
-                    fetch('https://script.google.com/macros/s/AKfycbySAuD966h8z2JL8g7deGB-1IiSazTqfPeVWFdpb85HxxFthdi-W3YeV3bRVKLzKfjR1A/exec', {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data)
-                    }).then(() => {
-                        console.log('Ad Guide: Event report successful');
-                    }).catch(error => {
-                        console.log('Ad Guide: Event report failed', error);
-                    });
-                }).catch(error => {
-                    // If IP retrieval fails, still send other data
-                    const data = {
-                        eventType: 'ad_guide_triggered',
-                        page: window.location.href,
-                        userAgent: navigator.userAgent,
-                        userIP: 'Unknown',
-                        totalAdsSeen: this.totalAdsSeen,
-                        totalFailedAds: this.getTotalFailedAds(),
-                        currentPageAds: this.currentPageAds.length,
-                        triggerCount: triggerCount,
-                        maxTriggersBeforeLongCooldown: this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN,
-                        longCooldownHours: this.LONG_COOLDOWN_HOURS,
-                        isInLongCooldown: isInLongCooldown,
-                        timestamp: new Date().toISOString()
-                    };
-                    
-                    console.log('Ad Guide: Reporting event data (IP retrieval failed)', data);
-                    
-                    fetch('https://script.google.com/macros/s/AKfycbySAuD966h8z2JL8g7deGB-1IiSazTqfPeVWFdpb85HxxFthdi-W3YeV3bRVKLzKfjR1A/exec', {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data)
-                    }).then(() => {
-                        console.log('Ad Guide: Event report successful (using Unknown IP)');
-                    }).catch(error => {
-                        console.log('Ad Guide: Event report failed', error);
-                    });
-                });
             }
 
             enableAdClick(targetAd) {
                 const clickHandler = () => {
-                    console.log('Ad Guide: User clicked ad');
+                    console.log('Ad guide: User clicked ad');
                     this.endGuide();
                 };
 
                 targetAd.addEventListener('click', clickHandler, { once: true });
 
-                // 200 seconds auto end guide (backup plan)
+                // Auto end guide after 200 seconds (backup plan)
                 setTimeout(() => {
                     if (this.isGuideActive) {
-                        console.log('Ad Guide: Timeout auto end (200 seconds)');
+                        console.log('Ad guide: Auto end due to timeout (200 seconds)');
                         this.endGuide();
                     }
                 }, 200000); // 200 seconds = 200000 milliseconds
             }
 
-            // Key Point 3: Interaction State Management Implementation
-            restrictUserInteraction(targetAd) {
-                // Do not disable page scroll, but prevent user scroll gestures
-                // document.body.style.overflow = 'hidden'; // Comment out this line
+            // Key point 3: Interaction state management implementation
+            restrictUserInteraction() {
+                // Do not disable page scrolling, but prevent user scroll gestures
+                // document.body.style.overflow = 'hidden'; // Commented out this line
                 
-                // Get target ad position to create a "hole" in the blocker
-                const adRect = targetAd.getBoundingClientRect();
-                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-                
-                // Create interaction blocker layer - with a cutout for the ad
+                // Create interaction blocking layer
                 const interactionBlocker = document.createElement('div');
                 interactionBlocker.id = 'interaction-blocker';
                 interactionBlocker.style.cssText = `
@@ -5110,39 +3913,12 @@
                     width: 100%;
                     height: 100%;
                     z-index: 9999;
-                    background: rgba(255, 255, 255, 0.1);
+                    background: transparent;
                 `;
                 
-                // Create clip-path to exclude ad area (create a frame shape with hole in middle)
-                const updateBlockerClipPath = () => {
-                    const rect = targetAd.getBoundingClientRect();
-                    // Create a polygon that covers everything except the ad area
-                    // Use evenodd fill rule to create a hole
-                    const clipPath = `polygon(evenodd,
-                        0% 0%, 
-                        100% 0%, 
-                        100% 100%, 
-                        0% 100%, 
-                        0% 0%, 
-                        ${rect.left}px ${rect.top}px, 
-                        ${rect.right}px ${rect.top}px, 
-                        ${rect.right}px ${rect.bottom}px, 
-                        ${rect.left}px ${rect.bottom}px, 
-                        ${rect.left}px ${rect.top}px
-                    )`;
-                    interactionBlocker.style.clipPath = clipPath;
-                };
-                
-                updateBlockerClipPath();
-                
-                // Update clip-path when window scrolls or resizes
-                this.updateBlockerClipPath = updateBlockerClipPath;
-                window.addEventListener('scroll', this.updateBlockerClipPath);
-                window.addEventListener('resize', this.updateBlockerClipPath);
-                
-                // Prevent user scroll but allow programmatic scroll
+                // Prevent user scrolling but allow programmatic scrolling
                 this.preventUserScroll = (e) => {
-                    // Prevent mouse wheel and touch scroll
+                    // Prevent mouse wheel and touch scrolling
                     if (e.type === 'wheel' || e.type === 'touchmove') {
                         e.preventDefault();
                         e.stopPropagation();
@@ -5158,15 +3934,8 @@
             }
 
             restoreUserInteraction() {
-                // Restore page scroll
+                // Restore page scrolling
                 document.body.style.overflow = '';
-                
-                // Remove clip-path update listeners
-                if (this.updateBlockerClipPath) {
-                    window.removeEventListener('scroll', this.updateBlockerClipPath);
-                    window.removeEventListener('resize', this.updateBlockerClipPath);
-                    this.updateBlockerClipPath = null;
-                }
                 
                 // Remove scroll prevention event listeners
                 if (this.preventUserScroll) {
@@ -5176,7 +3945,7 @@
                     this.preventUserScroll = null;
                 }
                 
-                // Remove interaction blocker layer
+                // Remove interaction blocking layer
                 const blocker = document.getElementById('interaction-blocker');
                 if (blocker) {
                     blocker.remove();
@@ -5186,7 +3955,7 @@
             endGuide() {
                 this.isGuideActive = false;
                 
-                // Stop scroll monitoring immediately (critical: must stop at the very beginning)
+                // Stop scroll monitoring immediately (critical: must stop at the beginning)
                 this.stopScrollMonitoring();
                 
                 // Remove scroll event listeners
@@ -5202,35 +3971,42 @@
                     overlay.remove();
                 }
                 
-                // No need to restore ad styles - we never modified them (fully compliant)
+                // Restore original styles of ad elements
+                this.currentPageAds.forEach(ad => {
+                    ad.style.position = '';
+                    ad.style.zIndex = '';
+                    ad.style.pointerEvents = '';
+                });
                 
                 // Restore user interaction
                 this.restoreUserInteraction();
                 
-                console.log('Ad Guide: Guide ended');
+                console.log('Ad guide: Guide ended');
             }
 
-            // Key Point 4: Guide Exit Conditions Implementation
+            // Key point 4: Guide exit conditions implementation
             setupPageVisibilityHandler() {
                 let pageHiddenTime = null;
                 
                 document.addEventListener('visibilitychange', () => {
                     if (document.hidden) {
                         pageHiddenTime = Date.now();
+                        // Update last active time when page becomes hidden
+                        this.updateLastActiveTime();
                     } else {
-                        // When page becomes visible again, update last activity time
-                        this.updateLastActivityTime();
+                        // Page becomes visible again - check for long absence
+                        this.checkAndResetIfLongAbsence();
                         
                         if (pageHiddenTime) {
                             const hiddenDuration = Date.now() - pageHiddenTime;
                             
-                            if (hiddenDuration <= 10000) {
-                                // Left for less than 10 seconds, show notification popup
+                            if (hiddenDuration <= 11000) {
+                                // Leave time less than 11 seconds, show notification popup
                                 this.showShortLeaveNotification();
-                            } else if (hiddenDuration > 10000) {
+                            } else if (hiddenDuration > 11000) {
                                 if (this.isGuideActive) {
-                                    // Guide active and left for more than 10 seconds, close guide and show thank you popup
-                                    console.log('Ad Guide: User left page for more than 10 seconds, auto close guide');
+                                    // Guide active and leave over 11 seconds, close guide and show thank you popup
+                                    console.log('Ad guide: User left page over 11 seconds, auto close guide');
                                     this.endGuide();
                                     this.showThankYouNotification();
                                 } else {
@@ -5240,6 +4016,9 @@
                             }
                         }
                         pageHiddenTime = null;
+                        
+                        // Update last active time when page becomes visible
+                        this.updateLastActiveTime();
                     }
                 });
             }
@@ -5302,7 +4081,7 @@
 
                 document.body.appendChild(notification);
 
-                // 2 seconds auto close
+                // Auto close after 2 seconds
                 setTimeout(() => {
                     if (notification && notification.parentNode) {
                         notification.style.animation = 'fadeOutScale 0.3s ease-out';
@@ -5339,9 +4118,10 @@
                     font-weight: 600;
                     z-index: 50000;
                     text-align: center;
-                    box-shadow: 0 12px 40px rgba(0, 122, 255, 0);
+                    box-shadow: none;
                     animation: fadeInScale 0.4s ease-out;
-                    border: 2px solid rgba(255, 255, 255, 0);
+                    border: none;
+                    opacity: 0;
                 `;
                 notification.textContent = 'Thank you for your AD browsing';
 
@@ -5376,7 +4156,7 @@
 
                 document.body.appendChild(notification);
 
-                // 3 seconds auto close
+                // Auto close after 3 seconds
                 setTimeout(() => {
                     if (notification && notification.parentNode) {
                         notification.style.animation = 'fadeOutScale 0.4s ease-out';
@@ -5388,10 +4168,10 @@
                     }
                 }, 3000);
 
-                console.log('Show thank you for ad browsing notification: Thank you for your AD browsing');
+                console.log('Show thank you for ad browsing: Thank you for your AD browsing');
             }
 
-            // Key Point 5: Debug Mode Implementation
+            // Key point 5: Debug mode implementation
             setupDebugMode() {
                 const themeBtn = document.getElementById('theme-btn');
                 if (!themeBtn) return;
@@ -5419,10 +4199,10 @@
                 
                 if (this.isDebugMode) {
                     this.showDebugPanel();
-                    console.log('Ad Guide: Debug mode activated');
+                    console.log('Ad guide: Debug mode activated');
                 } else {
                     this.hideDebugPanel();
-                    console.log('Ad Guide: Debug mode deactivated');
+                    console.log('Ad guide: Debug mode closed');
                 }
             }
 
@@ -5435,26 +4215,23 @@
                     position: fixed;
                     top: 10px;
                     right: 10px;
-                    width: 280px;
-                    max-height: 90vh;
-                    overflow-y: auto;
-                    background: rgba(0, 0, 0, 0.95);
+                    width: 250px;
+                    background: rgba(0, 0, 0, 0.9);
                     color: white;
-                    padding: 12px;
+                    padding: 15px;
                     border-radius: 8px;
                     font-size: 12px;
                     z-index: 20000;
                     font-family: monospace;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
                 `;
                 
                 document.body.appendChild(this.debugPanel);
                 this.updateDebugInfo();
                 
-                // Periodically update debug info (every 10 seconds to allow input)
+                // Regularly update debug information
                 this.debugUpdateInterval = setInterval(() => {
                     this.updateDebugInfo();
-                }, 10000);
+                }, 1000);
             }
 
             hideDebugPanel() {
@@ -5472,444 +4249,88 @@
             updateDebugInfo() {
                 if (!this.debugPanel) return;
                 
+                const lastTrigger = localStorage.getItem('adGuideLastTrigger');
+                const cooldownMs = this.COOLDOWN_MINUTES * 60 * 1000;
                 const now = Date.now();
                 
-                // Long cooldown countdown
-                const triggerCount = this.getTriggerCount();
-                const longCooldownStart = this.getLongCooldownStart();
-                let longCooldownDisplay = 'Inactive';
-                
-                if (longCooldownStart) {
-                    const longCooldownMs = this.LONG_COOLDOWN_HOURS * 60 * 60 * 1000;
-                    const longTimeRemaining = Math.max(0, longCooldownMs - (now - longCooldownStart));
-                    const longHours = Math.floor(longTimeRemaining / (60 * 60 * 1000));
-                    const longMinutes = Math.floor((longTimeRemaining % (60 * 60 * 1000)) / (60 * 1000));
-                    
-                    if (longTimeRemaining > 0) {
-                        longCooldownDisplay = `${longHours}h ${longMinutes}m`;
-                    } else {
-                        longCooldownDisplay = 'Ended';
-                    }
+                // Regular 15-minute cooldown
+                let timeUntilReset = 0;
+                if (lastTrigger) {
+                    const timeSinceLastTrigger = now - parseInt(lastTrigger);
+                    timeUntilReset = Math.max(0, cooldownMs - timeSinceLastTrigger);
                 }
                 
-                // Inactivity auto reset countdown
-                const lastActivity = this.getLastActivityTime();
-                let inactivityDisplay = 'Not Started';
+                const minutes = Math.floor(timeUntilReset / 60000);
+                const seconds = Math.floor((timeUntilReset % 60000) / 1000);
                 
-                if (lastActivity) {
-                    const inactivityMs = this.INACTIVITY_RESET_MINUTES * 60 * 1000;
-                    const timeSinceActivity = now - lastActivity;
-                    const inactivityRemaining = Math.max(0, inactivityMs - timeSinceActivity);
-                    
-                    if (inactivityRemaining > 0) {
-                        const inactivityMinutes = Math.floor(inactivityRemaining / (60 * 1000));
-                        const inactivitySeconds = Math.floor((inactivityRemaining % (60 * 1000)) / 1000);
-                        inactivityDisplay = `${inactivityMinutes}:${inactivitySeconds.toString().padStart(2, '0')}`;
-                    } else {
-                        inactivityDisplay = 'Reset Triggered';
-                    }
+                // Trigger count cooldown (2 hours)
+                const triggerCooldownReset = this.getTriggerCooldownReset();
+                let triggerCooldownRemaining = 0;
+                let triggerCooldownStatus = '';
+                
+                if (this.triggerCount >= this.MAX_TRIGGERS && triggerCooldownReset > now) {
+                    triggerCooldownRemaining = triggerCooldownReset - now;
+                    const hours = Math.floor(triggerCooldownRemaining / 3600000);
+                    const mins = Math.floor((triggerCooldownRemaining % 3600000) / 60000);
+                    triggerCooldownStatus = `<div style="color: #FF6B6B; font-weight: bold;">🚫 2-Hour Cooldown: ${hours}h ${mins}m</div>`;
+                } else if (this.triggerCount >= this.MAX_TRIGGERS) {
+                    triggerCooldownStatus = '<div style="color: #4CD964;">✅ Cooldown Expired (will reset on next trigger)</div>';
+                } else {
+                    triggerCooldownStatus = `<div>Trigger Count: ${this.triggerCount}/${this.MAX_TRIGGERS}</div>`;
                 }
                 
-                // Calculate ads needed for next trigger
-                const adsNeeded = Math.max(0, this.nextTriggerThreshold - (this.totalAdsSeen || 0));
-                
-                // Check just exited cooldown flag
-                const justExitedCooldown = localStorage.getItem('adGuideJustExitedCooldown');
-                const justExitedDisplay = justExitedCooldown === 'true' ? 'YES (Next skip)' : 'NO';
-                
-                // Get Reading Limit data
-                const rlDate = localStorage.getItem('readingLimitDate') || 'Not Set';
-                const rlChapters = parseInt(localStorage.getItem('readingLimitChapterCount') || '0');
-                const rlCooldownCount = parseInt(localStorage.getItem('readingLimitCooldownCount') || '0');
-                const rlIsInCooldown = localStorage.getItem('readingLimitIsInCooldown') === 'true';
-                const rlLimit = 80 * (rlCooldownCount + 1);
-                
-                let rlCooldownDisplay = 'Not Active';
-                if (rlIsInCooldown) {
-                    const cooldownStart = parseInt(localStorage.getItem('readingLimitCooldownStart') || '0');
-                    const cooldownDuration = parseInt(localStorage.getItem('readingLimitCooldownDuration') || '0');
-                    const remaining = Math.max(0, cooldownDuration - (now - cooldownStart));
-                    const hours = Math.floor(remaining / (60 * 60 * 1000));
-                    const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-                    const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
-                    rlCooldownDisplay = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                // Last active time info
+                const lastActiveTime = localStorage.getItem('adGuideLastActiveTime');
+                let lastActiveStatus = '';
+                if (lastActiveTime) {
+                    const timeSinceActive = now - parseInt(lastActiveTime);
+                    const minutesSinceActive = Math.floor(timeSinceActive / 60000);
+                    const secondsSinceActive = Math.floor((timeSinceActive % 60000) / 1000);
+                    lastActiveStatus = `<div style="font-size: 10px; color: #999;">Last active: ${minutesSinceActive}m ${secondsSinceActive}s ago</div>`;
                 }
-                
-                // Get Ad Guide date
-                const adGuideDate = localStorage.getItem('adGuideDate') || 'Not Set';
                 
                 this.debugPanel.innerHTML = `
-                    <div style="font-weight: bold; margin-bottom: 10px; font-size: 13px;">🔧 Debug Panel</div>
-                    
-                    <!-- Ad Guide System -->
-                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; margin-bottom: 10px;">
-                        <div style="font-weight: bold; margin-bottom: 5px; color: #FF9500;">📢 Ad Guide System</div>
-                        <div>Date: ${adGuideDate}</div>
-                        <div>Browser: ${this.isPCBrowser ? 'PC (Disabled)' : 'Mobile'}</div>
-                        <div>Page Ads: ${this.currentPageAds ? this.currentPageAds.length : 0}</div>
-                        <div>Total Ads: ${this.totalAdsSeen || 0}</div>
-                        <div>Failed Ads: ${this.getTotalFailedAds()}</div>
-                        <div style="border-top: 1px solid #444; margin: 5px 0; padding-top: 5px;">Next Trigger</div>
-                        <div>Target: ${this.nextTriggerThreshold} | Need: ${adsNeeded}</div>
-                        <div style="border-top: 1px solid #444; margin: 5px 0; padding-top: 5px;">Long Cooldown (${this.LONG_COOLDOWN_HOURS}h)</div>
-                        <div>Count: ${triggerCount}/${this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN} | ${longCooldownDisplay}</div>
-                        <div>Just Exited: ${justExitedDisplay}</div>
-                        <div style="margin-top: 5px;">
-                            <input type="text" id="cooldown-time-input" placeholder="10s, 2m, 1h" style="
-                                width: 100%;
-                                padding: 4px 6px;
-                                border: 1px solid #555;
-                                border-radius: 4px;
-                                background: #222;
-                                color: white;
-                                font-size: 11px;
-                                box-sizing: border-box;
-                            ">
-                        </div>
-                        <div style="margin-top: 5px;">
-                            <button onclick="adGuideSystem.setCooldownTime()" style="
-                                width: 100%;
-                                padding: 5px 10px;
-                                background: #FF9500;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 11px;
-                            ">Set Cooldown</button>
-                        </div>
-                        <div style="border-top: 1px solid #444; margin: 5px 0; padding-top: 5px;">Inactivity (${this.INACTIVITY_RESET_MINUTES}min)</div>
-                        <div>Countdown: ${inactivityDisplay}</div>
-                        <div style="margin-top: 5px;">Status: ${this.isGuideActive ? '🟢 Active' : '⚪ Standby'}</div>
-                        <div style="display: flex; gap: 5px; margin-top: 8px;">
-                            <button onclick="adGuideSystem.addOneAd()" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #34C759;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 11px;
-                            ">+1 Ad</button>
-                            <button onclick="adGuideSystem.addOneFailedAd()" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #FF9500;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 11px;
-                            ">+1 Fail</button>
-                        </div>
-                        <div style="display: flex; gap: 5px; margin-top: 5px;">
-                            <button onclick="adGuideSystem.resetAllData()" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #007AFF;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 11px;
-                            ">Reset All</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Reading Limit System -->
-                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; margin-bottom: 10px;">
-                        <div style="font-weight: bold; margin-bottom: 5px; color: #FF6B6B;">📚 Reading Limit</div>
-                        <div>Date: ${rlDate}</div>
-                        <div>Chapters: ${rlChapters} / ${rlLimit}</div>
-                        <div>Cooldown Count: ${rlCooldownCount}</div>
-                        <div>Status: ${rlIsInCooldown ? '❄️ Cooling' : '✅ Active'}</div>
-                        <div>Remaining: ${rlCooldownDisplay}</div>
-                        <div style="display: flex; gap: 5px; margin-top: 8px;">
-                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.addChapters(1)" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #5AC8FA;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 11px;
-                            ">+1 Ch</button>
-                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.addChapters(10)" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #5856D6;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 11px;
-                            ">+10 Ch</button>
-                        </div>
-                        <div style="display: flex; gap: 5px; margin-top: 5px;">
-                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.setChapters(79)" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #666;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 10px;
-                            ">→119</button>
-                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.setChapters(120)" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #666;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 10px;
-                            ">→120</button>
-                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.setChapters(239)" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #666;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 10px;
-                            ">→239</button>
-                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.setChapters(240)" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #666;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 10px;
-                            ">→160</button>
-                        </div>
-                        <div style="display: flex; gap: 5px; margin-top: 5px;">
-                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.endCooldown()" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #FF9500;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 11px;
-                            ">End Cool</button>
-                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.reset()" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #FF3B30;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 11px;
-                            ">Reset All</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Ad Protection System -->
-                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;">
-                        <div style="font-weight: bold; margin-bottom: 5px; color: #FF3B30;">🛡️ Ad Protection (Ratio)</div>
-                        <div>Date: ${localStorage.getItem('adProtectionDate') || 'Not Set'}</div>
-                        <div>Failed: ${parseInt(localStorage.getItem('adGuideFailedAds') || '0')} | Success: ${parseInt(localStorage.getItem('adGuideTotalSeen') || '0')}</div>
-                        <div>Ratio: ${(() => {
-                            const failed = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
-                            const success = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
-                            if (success === 0) return 'N/A (⚠️ Will trigger at 30)';
-                            const ratio = (failed / success).toFixed(2);
-                            const willTrigger = failed * 1.1 >= success;
-                            return ratio + (willTrigger ? ' ❌ Bad' : ' ✅ Safe');
-                        })()}</div>
-                        <div>Check Interval: 30 (checks at 30, 60, 90...)</div>
-                        <div>Cooldown Count: ${parseInt(localStorage.getItem('adProtectionCooldownCount') || '0')}</div>
-                        <div>Status: ${localStorage.getItem('adProtectionIsInCooldown') === 'true' ? '🛡️ Protected' : '✅ Active'}</div>
-                        <div>Remaining: ${(() => {
-                            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
-                            if (!isInCooldown) return 'Not Active';
-                            const cooldownStart = parseInt(localStorage.getItem('adProtectionCooldownStart') || '0');
-                            const cooldownDuration = parseInt(localStorage.getItem('adProtectionCooldownDuration') || '0');
-                            const remaining = Math.max(0, cooldownDuration - (now - cooldownStart));
-                            const hours = Math.floor(remaining / (60 * 60 * 1000));
-                            const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-                            const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
-                            return hours + ':' + minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
-                        })()}</div>
-                        <div style="display: flex; gap: 5px; margin-top: 8px;">
-                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(29)" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #666;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 10px;
-                            ">→29</button>
-                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(30)" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #666;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 10px;
-                            ">→30</button>
-                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(59)" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #666;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 10px;
-                            ">→59</button>
-                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(60)" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #666;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 10px;
-                            ">→60</button>
-                        </div>
-                        <div style="display: flex; gap: 5px; margin-top: 5px;">
-                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.endCooldown()" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #34C759;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 11px;
-                            ">End Cool</button>
-                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.reset()" style="
-                                flex: 1;
-                                padding: 5px 10px;
-                                background: #FF3B30;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 11px;
-                            ">Reset All</button>
-                        </div>
-                    </div>
+                    <div style="font-weight: bold; margin-bottom: 10px;">Ad Guide Debug Panel</div>
+                    <div>Browser Environment: ${this.isPCBrowser ? 'PC Browser (Disabled)' : 'Mobile Device'}</div>
+                    <div>Current Page Ads: ${this.currentPageAds ? this.currentPageAds.length : 0}</div>
+                    <div>Total Ads Seen: ${this.totalAdsSeen || 0}</div>
+                    <div>Ads Needed for Trigger: ${Math.max(0, this.REQUIRED_ADS - (this.totalAdsSeen || 0))} more ads</div>
+                    ${triggerCooldownStatus}
+                    <div>15-Min Cooldown: ${minutes}:${seconds.toString().padStart(2, '0')}</div>
+                    <div>Guide Status: ${this.isGuideActive ? 'Active' : 'Standby'}</div>
+                    ${lastActiveStatus}
+                    <div style="font-size: 10px; color: #FF9500; margin-top: 5px;">⏰ Auto-reset after 60 min away</div>
+                    <button onclick="adGuideSystem.resetAllData()" style="
+                        margin-top: 10px;
+                        padding: 5px 10px;
+                        background: #007AFF;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 11px;
+                    ">Reset All</button>
                 `;
             }
 
             resetAllData() {
+                localStorage.removeItem('adGuideLastTrigger');
                 localStorage.removeItem('adGuideTotalSeen');
-                localStorage.removeItem('adGuideFailedAds');
-                localStorage.removeItem('adGuideNextThreshold');
                 localStorage.removeItem('adGuideTriggerCount');
-                localStorage.removeItem('adGuideLongCooldownStart');
-                localStorage.removeItem('adGuideLastActivity');
-                localStorage.removeItem('adGuideJustExitedCooldown');
+                localStorage.removeItem('adGuideTriggerCooldownReset');
+                localStorage.removeItem('adGuideLastActiveTime');
                 this.totalAdsSeen = 0;
-                this.nextTriggerThreshold = Math.floor(Math.random() * (this.MAX_INITIAL_ADS - this.MIN_INITIAL_ADS + 1)) + this.MIN_INITIAL_ADS;
+                this.triggerCount = 0;
                 this.currentPageAds = [];
                 if (this.isGuideActive) {
                     this.endGuide();
                 }
                 // Ensure scroll monitoring is stopped
                 this.stopScrollMonitoring();
-                console.log('Ad Guide: All data reset (including total ads, failed ads, threshold, trigger count, long cooldown and activity time)');
+                console.log('Ad guide: All data reset (including cross-page cumulative data, trigger count, and last active time)');
                 this.updateDebugInfo();
-            }
-
-            // Debug function: manually add one ad view
-            addOneAd() {
-                this.totalAdsSeen++;
-                this.saveTotalAdsSeen();
-                console.log(`Ad Guide: [DEBUG] Manually added 1 ad, total: ${this.totalAdsSeen}, threshold: ${this.nextTriggerThreshold}`);
-                this.updateDebugInfo();
-                
-                // Check if trigger condition is met
-                if (this.totalAdsSeen >= this.nextTriggerThreshold) {
-                    this.considerTriggeringGuide();
-                }
-            }
-
-            // Debug function: manually add one failed ad
-            addOneFailedAd() {
-                const current = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
-                const newCount = current + 1;
-                localStorage.setItem('adGuideFailedAds', newCount.toString());
-                console.log(`Ad Guide: [DEBUG] Manually added 1 failed ad, total: ${newCount}`);
-                this.updateDebugInfo();
-            }
-
-            // Debug function: set custom cooldown time
-            setCooldownTime() {
-                const input = document.getElementById('cooldown-time-input');
-                if (!input) return;
-                
-                const timeString = input.value.trim().toLowerCase();
-                if (!timeString) {
-                    alert('Please enter a time value (e.g., 10s, 2m, 1h)');
-                    return;
-                }
-                
-                // Parse time string
-                let milliseconds = 0;
-                const timeMatch = timeString.match(/^(\d+(?:\.\d+)?)(s|m|h)$/);
-                
-                if (!timeMatch) {
-                    alert('Invalid format! Use: 10s (seconds), 2m (minutes), or 1h (hours)');
-                    return;
-                }
-                
-                const value = parseFloat(timeMatch[1]);
-                const unit = timeMatch[2];
-                
-                switch(unit) {
-                    case 's':
-                        milliseconds = value * 1000;
-                        break;
-                    case 'm':
-                        milliseconds = value * 60 * 1000;
-                        break;
-                    case 'h':
-                        milliseconds = value * 60 * 60 * 1000;
-                        break;
-                }
-                
-                // Calculate the timestamp for when cooldown should end
-                const cooldownEndTime = Date.now() + milliseconds;
-                const cooldownStartTime = cooldownEndTime - (this.LONG_COOLDOWN_HOURS * 60 * 60 * 1000);
-                
-                // Set the cooldown start time
-                this.saveLongCooldownStart(cooldownStartTime);
-                
-                // Set trigger count to enter cooldown state
-                if (this.getTriggerCount() < this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN) {
-                    this.saveTriggerCount(this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN);
-                }
-                
-                // Clear the just exited flag if it exists
-                localStorage.removeItem('adGuideJustExitedCooldown');
-                
-                console.log(`Ad Guide: [DEBUG] Long cooldown set to ${timeString} (${milliseconds}ms)`);
-                console.log(`Ad Guide: [DEBUG] Cooldown will end at: ${new Date(cooldownEndTime).toLocaleString()}`);
-                
-                // Clear input
-                input.value = '';
-                
-                // Update debug panel
-                this.updateDebugInfo();
-                
-                alert(`Long cooldown set to ${timeString}!\nWill end at: ${new Date(cooldownEndTime).toLocaleTimeString()}`);
+                // Update last active time after reset
+                this.updateLastActiveTime();
             }
 
             startPeriodicCheck() {
@@ -5920,6 +4341,11 @@
                         return rect.height > 100 && rect.height <= 650 && document.body.contains(ad);
                     });
                     this.updateDebugInfo();
+                    
+                    // Update last active time every 5 seconds when page is active
+                    if (!document.hidden) {
+                        this.updateLastActiveTime();
+                    }
                 }, 5000);
             }
         }
@@ -5929,51 +4355,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             adGuideSystem = new AdClickGuideSystem();
             
-            // Expose instance to global for debugging
+            // Expose instance globally for debugging
             window.adGuideSystem = adGuideSystem;
         });
     </script>
-    
-    <!-- Ad Top Protection Layer - Independent Module -->
-    <style>
-        /* Independent Ad Top Mask System */
-        /* Purpose: Add a protective overlay on top of ad containers */
-        /* This is a standalone feature and does not modify any advertising code */
-        
-        [id^="div-gpt-ad-"] {
-            position: relative !important;
-        }
-
-        [id^="div-gpt-ad-"]::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 35px;
-            background: transparent;
-            pointer-events: auto;
-            z-index: 999999 !important;
-            display: block !important;
-        }
-
-        /* Support for additional ad types if needed */
-        .adsbygoogle {
-            position: relative !important;
-        }
-
-        .adsbygoogle::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 35px;
-            background: transparent;
-            pointer-events: auto;
-            z-index: 999999 !important;
-            display: block !important;
-        }
-    </style>
 </body>
 </html>

@@ -3,49 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- 禁用 Console 输出 -->
-    <script>
-    (function() {
-        'use strict';
-        // 覆盖所有 console 方法，使其不输出任何内容
-        if (typeof console !== 'undefined') {
-            const noop = function() {};
-            const methods = ['log', 'debug', 'info', 'warn', 'error', 'trace', 'dir', 'dirxml', 
-                           'group', 'groupCollapsed', 'groupEnd', 'time', 'timeEnd', 'timeLog',
-                           'assert', 'profile', 'profileEnd', 'count', 'countReset', 'table', 'clear'];
-            methods.forEach(function(method) {
-                if (console[method]) {
-                    console[method] = noop;
-                }
-            });
-        }
-    })();
-    </script>
-    
     <title>{% if page_title %}{{ page_title }}{% else %}NovelVibe - Free Novels for Women{% endif %}</title>
+    <meta name="description" content="{% if page_description %}{{ page_description }}{% else %}Discover thousands of free werewolf romance novels. Read passionate alpha stories, mate bonds, and pack adventures. Perfect for women who love paranormal romance.{% endif %}">
+    <meta name="keywords" content="free werewolf novels, alpha romance, mate bond stories, paranormal romance, werewolf fiction, free books for women">
     
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-62HR245J7Y"></script>
+    <!-- Time Meta Tags for SEO -->
+    {% if timestamps %}
+    <meta property="article:published_time" content="{{ timestamps.created_iso }}">
+    <meta property="article:modified_time" content="{{ timestamps.modified_iso }}">
+    <meta name="date" content="{{ timestamps.modified_date }}">
+    <meta name="last-modified" content="{{ timestamps.modified_readable }}">
+    {% endif %}
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="{% if page_title %}{{ page_title }}{% else %}NovelVibe - Free Novels for Women{% endif %}">
+    <meta property="og:description" content="{% if page_description %}{{ page_description }}{% else %}Discover thousands of free werewolf romance novels{% endif %}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:image" content="{{ site_url }}/assets/images/og-image.jpg">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% if page_title %}{{ page_title }}{% else %}NovelVibe{% endif %}">
+    <meta name="twitter:description" content="{% if page_description %}{{ page_description }}{% else %}Free werewolf romance novels{% endif %}">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{ canonical_url }}">
+    
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YKK2QRZ5GC"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
+      gtag('config', 'G-YKK2QRZ5GC');
+    </script>
+    
+    <!-- Google AdSense
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3389384312091761"
+         crossorigin="anonymous"></script>
+     -->
 
-      gtag('config', 'G-62HR245J7Y');
-    </script>
-    
-    <!-- Google Publisher Tag (GPT) -->
-    <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
-    <script>
-      window.googletag = window.googletag || {cmd: []};
-      googletag.cmd.push(function() {
-        googletag.defineSlot('/93656639/myfreenovel.com/banner_1', [300, 250], 'div-gpt-ad-index-1').addService(googletag.pubads());
-        googletag.pubads().enableSingleRequest();
-        googletag.enableServices();
-      });
-    </script>
-    
+
+
     <!-- Facebook Pixel Code -->
     <script>
     !function(f,b,e,v,n,t,s)
@@ -57,7 +57,7 @@
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
 
-    fbq('init', '1355356909503023');
+    fbq('init', '835106315764533');
     
     // Natural 72-hour event tracking prevention (resets every 3 days)
     function shouldTrackEvent(eventName) {
@@ -84,174 +84,9 @@
     }
     </script>
     <noscript><img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id=1355356909503023&ev=PageView&noscript=1"
+    src="https://www.facebook.com/tr?id=835106315764533&ev=PageView&noscript=1"
     /></noscript>
     <!-- End Facebook Pixel Code -->
-    
-    <!-- 追踪参数保持系统 -->
-    <script>
-    (function() {
-        'use strict';
-        
-        // 需要保持的追踪参数列表
-        const TRACKING_PARAMS = ['fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id'];
-        const STORAGE_KEY = 'tracking_params';
-        const STORAGE_EXPIRY_KEY = 'tracking_params_expiry';
-        const EXPIRY_HOURS = 24; // 24小时过期
-        
-        /**
-         * 从URL中提取追踪参数
-         */
-        function extractTrackingParams(url) {
-            const params = {};
-            try {
-                const urlObj = new URL(url);
-                TRACKING_PARAMS.forEach(param => {
-                    const value = urlObj.searchParams.get(param);
-                    if (value) {
-                        params[param] = value;
-                    }
-                });
-            } catch (e) {
-                console.error('URL解析失败:', e);
-            }
-            return params;
-        }
-        
-        /**
-         * 保存追踪参数到 localStorage
-         */
-        function saveTrackingParams(params) {
-            if (Object.keys(params).length === 0) return;
-            
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(params));
-                const expiryTime = Date.now() + (EXPIRY_HOURS * 60 * 60 * 1000);
-                localStorage.setItem(STORAGE_EXPIRY_KEY, expiryTime.toString());
-                console.log('追踪参数已保存:', params);
-            } catch (e) {
-                console.error('保存追踪参数失败:', e);
-            }
-        }
-        
-        /**
-         * 从 localStorage 读取追踪参数
-         */
-        function loadTrackingParams() {
-            try {
-                const expiryTime = localStorage.getItem(STORAGE_EXPIRY_KEY);
-                if (expiryTime && Date.now() > parseInt(expiryTime)) {
-                    // 已过期，清除
-                    localStorage.removeItem(STORAGE_KEY);
-                    localStorage.removeItem(STORAGE_EXPIRY_KEY);
-                    console.log('追踪参数已过期，已清除');
-                    return {};
-                }
-                
-                const stored = localStorage.getItem(STORAGE_KEY);
-                if (stored) {
-                    const params = JSON.parse(stored);
-                    console.log('从存储加载追踪参数:', params);
-                    return params;
-                }
-            } catch (e) {
-                console.error('读取追踪参数失败:', e);
-            }
-            return {};
-        }
-        
-        /**
-         * 为链接添加追踪参数
-         */
-        function addTrackingParamsToUrl(url, params) {
-            if (Object.keys(params).length === 0) return url;
-            
-            try {
-                const urlObj = new URL(url, window.location.origin);
-                
-                // 只处理同域名的链接
-                if (urlObj.origin !== window.location.origin) {
-                    return url;
-                }
-                
-                // 添加参数
-                Object.keys(params).forEach(key => {
-                    if (!urlObj.searchParams.has(key)) {
-                        urlObj.searchParams.set(key, params[key]);
-                    }
-                });
-                
-                return urlObj.toString();
-            } catch (e) {
-                console.error('添加追踪参数失败:', e);
-                return url;
-            }
-        }
-        
-        /**
-         * 处理页面上的所有链接
-         */
-        function processPageLinks(params) {
-            if (Object.keys(params).length === 0) return;
-            
-            // 处理所有 <a> 标签
-            const links = document.querySelectorAll('a[href]');
-            links.forEach(link => {
-                const href = link.getAttribute('href');
-                if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
-                    const newHref = addTrackingParamsToUrl(href, params);
-                    if (newHref !== href) {
-                        link.setAttribute('href', newHref);
-                    }
-                }
-            });
-            
-            console.log(`已处理 ${links.length} 个链接`);
-        }
-        
-        /**
-         * 初始化追踪参数系统
-         */
-        function initTrackingSystem() {
-            // 1. 检查当前URL是否有新的追踪参数
-            const currentParams = extractTrackingParams(window.location.href);
-            
-            // 2. 如果有新参数，保存它们（新参数优先级更高）
-            if (Object.keys(currentParams).length > 0) {
-                saveTrackingParams(currentParams);
-                console.log('检测到新的追踪参数，已更新存储');
-            }
-            
-            // 3. 加载存储的参数（可能是刚保存的新参数，也可能是之前的旧参数）
-            const storedParams = loadTrackingParams();
-            
-            // 4. 如果有参数需要保持，处理页面上的所有链接
-            if (Object.keys(storedParams).length > 0) {
-                // 等待 DOM 完全加载
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', () => {
-                        processPageLinks(storedParams);
-                    });
-                } else {
-                    processPageLinks(storedParams);
-                }
-                
-                // 监听动态添加的链接
-                const observer = new MutationObserver(() => {
-                    processPageLinks(storedParams);
-                });
-                
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true
-                });
-            }
-        }
-        
-        // 立即执行初始化
-        initTrackingSystem();
-    })();
-    </script>
     
     <!-- 页面访问统计代码 -->
     <script>
@@ -267,7 +102,7 @@
             };
             
             // 发送数据到 Google Apps Script
-            fetch('https://script.google.com/macros/s/AKfycbySAuD966h8z2JL8g7deGB-1IiSazTqfPeVWFdpb85HxxFthdi-W3YeV3bRVKLzKfjR1A/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbxuCd58gcBzU-T_ipn7HWCrOM3Mex1c3PiHc8FmFIUe6Zm_KxSbkrsgOwyEgWYm1fsEdQ/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -286,7 +121,7 @@
                 userIP: 'Unknown'
             };
             
-            fetch('https://script.google.com/macros/s/AKfycbySAuD966h8z2JL8g7deGB-1IiSazTqfPeVWFdpb85HxxFthdi-W3YeV3bRVKLzKfjR1A/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbxuCd58gcBzU-T_ipn7HWCrOM3Mex1c3PiHc8FmFIUe6Zm_KxSbkrsgOwyEgWYm1fsEdQ/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1076,6 +911,111 @@
     </footer>
 
     <script>
+        // ===== Facebook Tracking Parameters Preservation System =====
+        
+        // Facebook 和其他渠道的追踪参数列表
+        const TRACKING_PARAMS = [
+            'fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 
+            'utm_term', 'utm_content', 'utm_id', 'gclid', 'msclkid', 'ttclid'
+        ];
+        
+        function extractTrackingParams(url) {
+            const urlObj = new URL(url, window.location.origin);
+            const params = {};
+            let hasParams = false;
+            
+            TRACKING_PARAMS.forEach(param => {
+                const value = urlObj.searchParams.get(param);
+                if (value) {
+                    params[param] = value;
+                    hasParams = true;
+                }
+            });
+            
+            return hasParams ? params : null;
+        }
+        
+        function saveCurrentTrackingParams() {
+            const currentParams = extractTrackingParams(window.location.href);
+            
+            if (currentParams) {
+                localStorage.setItem('trackingParams', JSON.stringify(currentParams));
+                localStorage.setItem('trackingParamsTimestamp', Date.now().toString());
+                console.log('📊 [首页] 保存新的追踪参数:', currentParams);
+                return true;
+            }
+            
+            return false;
+        }
+        
+        function getStoredTrackingParams() {
+            try {
+                const paramsStr = localStorage.getItem('trackingParams');
+                const timestamp = localStorage.getItem('trackingParamsTimestamp');
+                
+                if (!paramsStr || !timestamp) return null;
+                
+                const age = Date.now() - parseInt(timestamp);
+                const twentyFourHours = 24 * 60 * 60 * 1000;
+                
+                if (age > twentyFourHours) {
+                    localStorage.removeItem('trackingParams');
+                    localStorage.removeItem('trackingParamsTimestamp');
+                    return null;
+                }
+                
+                return JSON.parse(paramsStr);
+            } catch (error) {
+                return null;
+            }
+        }
+        
+        function addTrackingParams(url) {
+            try {
+                const urlObj = new URL(url, window.location.origin);
+                
+                const hasExistingParams = TRACKING_PARAMS.some(param => 
+                    urlObj.searchParams.has(param)
+                );
+                
+                if (hasExistingParams) {
+                    return url;
+                }
+                
+                const storedParams = getStoredTrackingParams();
+                
+                if (storedParams) {
+                    Object.keys(storedParams).forEach(key => {
+                        urlObj.searchParams.set(key, storedParams[key]);
+                    });
+                    return urlObj.toString();
+                }
+                
+                return url;
+            } catch (error) {
+                return url;
+            }
+        }
+        
+        function initTrackingSystem() {
+            saveCurrentTrackingParams();
+            
+            // 为所有小说链接添加追踪参数
+            document.querySelectorAll('a[href*="/novels/"]').forEach(link => {
+                if (link.href) {
+                    const originalHref = link.href;
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        window.location.href = addTrackingParams(originalHref);
+                    });
+                }
+            });
+            
+            console.log('📊 [首页] 追踪参数系统已初始化');
+        }
+        
+        document.addEventListener('DOMContentLoaded', initTrackingSystem);
+        
         // Simulate loading effect
         document.addEventListener('DOMContentLoaded', function() {
             const cards = document.querySelectorAll('.novel-card');
@@ -1264,12 +1204,10 @@
                 if (dataElement && dataElement.textContent.trim()) {
                     allNovels = JSON.parse(dataElement.textContent);
                     console.log('成功加载小说数据：', allNovels.length, '本');
-                    // 按时间倒序排列(最新的在前面)
-                    allNovels.sort((a, b) => {
-                        const dateA = new Date(a.last_updated);
-                        const dateB = new Date(b.last_updated);
-                        return dateB - dateA; // 降序排列
-                    });
+                    // 随机打乱小说顺序，但保持前8本不变（已经在模板中显示）
+                    const remainingNovels = allNovels.slice(8);
+                    shuffleArray(remainingNovels);
+                    allNovels = [...allNovels.slice(0, 8), ...remainingNovels];
                 } else {
                     console.error('未找到小说数据或数据为空');
                     allNovels = [];
@@ -1277,6 +1215,13 @@
             } catch (error) {
                 console.error('加载小说数据时出错:', error);
                 allNovels = [];
+            }
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
             }
         }
 
