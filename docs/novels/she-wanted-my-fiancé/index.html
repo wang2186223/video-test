@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset=    // Natural 72-hour event    // Track PageView with 72-hour prevention
+    if (shouldTrackEvent('PageView_Novel')) {
+        fbq('track', 'PageView');
+        console.log('Facebook事件已发送: PageView (小说介绍页浏览)');
+    } else {
+        console.log('Facebook事件已跳过: PageView_Novel (本72小时内已发送)');
+    }ng prevention (resets every 3 days)
+    function shouldTrackEvent(eventName) {
+        const now = new Date();
+        const threeDaysAgo = new Date(now.getTime() - (3 * 24 * 60 * 60 * 1000));
+        const currentPeriod = Math.floor(now.getTime() / (3 * 24 * 60 * 60 * 1000));
+        const storageKey = `fb_event_${eventName}`;
+        const lastTrackedPeriod = localStorage.getItem(storageKey);
+        
+        if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+            localStorage.setItem(storageKey, currentPeriod.toString());
+            return true;
+        }
+        
+        return false;
+    }meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>She Wanted My Fiancé - NovelVibe</title>
+    <meta name="description" content="My best friend insisted on testing my fiancé&#39;s loyalty with a fake account. I agreed, but gave her my fake instead. Imagine my horror when she used it not to seduce him, but to viciously slander me and steal him away. Now, it&#39;s time to turn the tables and give her a taste of her own medicine.">
+    <meta name="keywords" content="romance, fantasy">
+    
+    <!-- Time Meta Tags for SEO -->
+    
+    <meta property="article:published_time" content="2026-01-09T11:34:16.902270">
+    <meta property="article:modified_time" content="2026-01-09T11:34:16.902270">
+    <meta name="date" content="2026-01-09">
+    <meta name="last-modified" content="2026-01-09 11:34:16">
+    
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="She Wanted My Fiancé">
+    <meta property="og:description" content="My best friend insisted on testing my fiancé&#39;s loyalty with a fake account. I agreed, but gave her my fake instead. Imagine my horror when she used it not to seduce him, but to viciously slander me and steal him away. Now, it&#39;s time to turn the tables and give her a taste of her own medicine.">
+    <meta property="og:type" content="book">
+    <meta property="og:url" content="https://novel.234xi.com//novels/she-wanted-my-fiancé/">
+    <meta property="og:image" content="/covers/she-wanted-my-fiancé-ScreenShot_2025-11-24_141523_775.png">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="She Wanted My Fiancé">
+    <meta name="twitter:description" content="My best friend insisted on testing my fiancé&#39;s loyalty with a fake account. I agreed, but gave her my fake instead. Imagine my horror when she used it not to seduce him, but to viciously slander me and steal him away. Now, it&#39;s time to turn the tables and give her a taste of her own medicine.">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://novel.234xi.com//novels/she-wanted-my-fiancé/">
+    
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-EWY8W7MKKM"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-EWY8W7MKKM');
+    </script>
+    
+    <!-- Google AdSense
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3389384312091761"
+         crossorigin="anonymous"></script> -->
+    
+
+
+    <!-- Facebook Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+
+    fbq('init', '25561851683480779');
+    
+    // Natural 72-hour event tracking prevention (resets every 3 days)
+    function shouldTrackEvent(eventName) {
+        const now = new Date();
+        const threeDaysAgo = new Date(now.getTime() - (3 * 24 * 60 * 60 * 1000));
+        const currentPeriod = Math.floor(now.getTime() / (3 * 24 * 60 * 60 * 1000));
+        const storageKey = `fb_event_${eventName}`;
+        const lastTrackedPeriod = localStorage.getItem(storageKey);
+        
+        if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+            localStorage.setItem(storageKey, currentPeriod.toString());
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // Track PageView with 24-hour prevention
+    if (shouldTrackEvent('PageView_Novel')) {
+        fbq('track', 'PageView');
+        console.log('Facebook事件已发送: PageView (小说介绍页浏览)');
+    } else {
+        console.log('Facebook事件已跳过: PageView_Novel (今日已发送)');
+    }
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=25561851683480779&ev=PageView&noscript=1"
+    /></noscript>
+    <!-- End Facebook Pixel Code -->
+    
+    <!-- 页面访问统计代码 -->
+    <script>
+    // 页面访问数据收集
+    function sendPageVisit() {
+        // 先获取用户IP地址
+        getUserIP().then(userIP => {
+            const data = {
+                page: window.location.href,
+                userAgent: navigator.userAgent,
+                referrer: document.referrer || 'direct',
+                userIP: userIP
+            };
+            
+            // 发送数据到 Google Apps Script
+            fetch('https://script.google.com/macros/s/AKfycbxvbINCdEawKjvPQxGFWACwJ1NL_PGraB2FntCuJbV7k3QGfNvm_rMG6JB0CjsV1A/exec', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            }).catch(error => {
+                console.log('Analytics error:', error);
+            });
+        }).catch(error => {
+            // 如果获取IP失败，仍发送其他数据
+            const data = {
+                page: window.location.href,
+                userAgent: navigator.userAgent,
+                referrer: document.referrer || 'direct',
+                userIP: 'Unknown'
+            };
+            
+            fetch('https://script.google.com/macros/s/AKfycbxvbINCdEawKjvPQxGFWACwJ1NL_PGraB2FntCuJbV7k3QGfNvm_rMG6JB0CjsV1A/exec', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            }).catch(error => {
+                console.log('Analytics error:', error);
+            });
+        });
+    }
+    
+    // 获取用户IP地址
+    async function getUserIP() {
+        try {
+            // 方法1：使用免费的IP API
+            const response = await fetch('https://api.ipify.org?format=json');
+            const ipData = await response.json();
+            return ipData.ip;
+        } catch (error1) {
+            try {
+                // 方法2：备用IP API
+                const response = await fetch('https://httpbin.org/ip');
+                const ipData = await response.json();
+                return ipData.origin.split(',')[0].trim();
+            } catch (error2) {
+                try {
+                    // 方法3：第三个备用API
+                    const response = await fetch('https://jsonip.com');
+                    const ipData = await response.json();
+                    return ipData.ip;
+                } catch (error3) {
+                    console.log('获取IP失败，使用Unknown');
+                    return 'Unknown';
+                }
+            }
+        }
+    }
+    
+    // 页面加载完成后发送访问数据
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', sendPageVisit);
+    } else {
+        sendPageVisit();
+    }
+    </script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f7;
+            color: #333;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 头部导航 */
+        header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-weight: 700;
+            font-size: 22px;
+            color: #0071e3;
+            text-decoration: none;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .nav-btn {
+            padding: 8px 16px;
+            background: #f5f5f7;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .nav-btn:hover {
+            background: #e0e0e0;
+        }
+        
+        /* 书籍信息部分 */
+        .book-header {
+            display: flex;
+            gap: 30px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .book-cover {
+            flex-shrink: 0;
+            width: 240px;
+            height: 360px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+        
+        .book-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .book-info {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .book-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #1d1d1f;
+        }
+        
+        .book-author {
+            font-size: 20px;
+            color: #86868b;
+            margin-bottom: 20px;
+        }
+        
+        .book-meta {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .meta-item {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #0071e3;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0077ed;
+            transform: translateY(-2px);
+        }
+        
+        /* 阅读历史记录样式 */
+        .reading-history {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 15px;
+            color: white;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .history-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .history-header i {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .history-info {
+            margin-bottom: 15px;
+        }
+        
+        .last-read-chapter {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .reading-progress {
+            margin-bottom: 10px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .last-read-time {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        #continue-reading-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        #continue-reading-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        /* 书籍简介 */
+        .book-description {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin: 30px 0;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+        
+        .section-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1d1d1f;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .description-text {
+            color: #515154;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+        
+        /* 章节目录 */
+        .chapters-container {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin: 30px 0;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+        
+        .chapters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .chapters-filter {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            background: #f5f5f7;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .filter-btn.active {
+            background: #0071e3;
+            color: white;
+        }
+        
+        .chapters-list {
+            list-style: none;
+        }
+        
+        .chapter-item {
+            padding: 18px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .chapter-item:hover {
+            background: #f9f9f9;
+        }
+        
+        .chapter-item:last-child {
+            border-bottom: none;
+        }
+        
+        .chapter-item.read {
+            background: rgba(0, 113, 227, 0.05);
+        }
+        
+        .chapter-item.current {
+            background: rgba(0, 113, 227, 0.1);
+            border-left: 4px solid #0071e3;
+        }
+        
+        .chapter-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+        
+        .status-icon.read {
+            background: #34c759;
+            color: white;
+        }
+        
+        .status-icon.current {
+            background: #0071e3;
+            color: white;
+        }
+        
+        .status-icon.unread {
+            background: #f0f0f0;
+            color: #86868b;
+        }
+        
+        .chapter-title {
+            font-size: 16px;
+            color: #1d1d1f;
+        }
+        
+        .chapter-link {
+            color: inherit;
+            text-decoration: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .chapter-date {
+            font-size: 14px;
+            color: #86868b;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .book-header {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            
+            .book-cover {
+                width: 200px;
+                height: 300px;
+            }
+            
+            .book-meta {
+                justify-content: center;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .chapters-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .chapters-filter {
+                width: 100%;
+                overflow-x: auto;
+                padding-bottom: 10px;
+            }
+            
+            .nav-buttons {
+                gap: 8px;
+            }
+            
+            .nav-btn {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+        }
+        
+        /* 底部导航 - 移动端 */
+        .bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 15px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+        
+        .bottom-nav-buttons {
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .bottom-nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 12px;
+            color: #86868b;
+        }
+        
+        .bottom-nav-btn i {
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+        
+        .bottom-nav-btn.active {
+            color: #0071e3;
+        }
+        
+        @media (max-width: 640px) {
+            .bottom-nav {
+                display: block;
+            }
+            
+            body {
+                padding-bottom: 70px;
+            }
+        }
+    </style>
+    
+    <!-- Schema.org Structured Data for Book -->
+    
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Book",
+        "name": "She Wanted My Fiancé",
+        "author": {
+            "@type": "Person",
+            "name": "Unknown Author"
+        },
+        "description": "My best friend insisted on testing my fiancé&#39;s loyalty with a fake account. I agreed, but gave her my fake instead. Imagine my horror when she used it not to seduce him, but to viciously slander me and steal him away. Now, it&#39;s time to turn the tables and give her a taste of her own medicine.",
+        "genre": "Fantasy, Romance",
+        "url": "https://novel.234xi.com//novels/she-wanted-my-fiancé/",
+        
+        "image": "/covers/she-wanted-my-fiancé-ScreenShot_2025-11-24_141523_775.png",
+        
+        "datePublished": "2026-01-09T11:34:16.902270",
+        "dateModified": "2026-01-09T11:34:16.902270",
+        "publisher": {
+            "@type": "Organization",
+            "name": "NovelVibe",
+            "url": "https://novel.234xi.com/"
+        },
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.5",
+            "bestRating": "5",
+            "worstRating": "1",
+            "ratingCount": "100"
+        },
+        "numberOfPages": "130"
+    }
+    </script>
+    
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header>
+        <div class="nav-container">
+            <div class="nav-buttons">
+                <a href="javascript:history.back()" class="nav-btn" id="back-button">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+                <a href="/" class="nav-btn" id="home-button">
+                    <i class="fas fa-home"></i> Home
+                </a>
+            </div>
+            <a href="/" class="logo">NovelVibe</a>
+            <div class="nav-buttons">
+                <a href="/library/" class="nav-btn">
+                    <i class="fas fa-bookmark"></i> Library
+                </a>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- 书籍信息 -->
+        <div class="book-header">
+            <div class="book-cover">
+                <img src="/covers/she-wanted-my-fiancé-ScreenShot_2025-11-24_141523_775.png" alt="She Wanted My Fiancé">
+            </div>
+            <div class="book-info">
+                <h1 class="book-title">She Wanted My Fiancé</h1>
+                <p class="book-author">By Unknown Author</p>
+                
+                <div class="book-meta">
+                    
+                    <div class="meta-item">Fantasy</div>
+                    
+                    <div class="meta-item">Romance</div>
+                    
+                    
+                    <div class="meta-item">4.5 ★★★★★</div>
+                    
+                    
+                    <div class="meta-item">completed</div>
+                    
+                    
+                    <div class="meta-item">13 Chapters</div>
+                    
+                </div>
+                
+                
+                <p class="description-text">
+                    My best friend insisted on testing my fiancé&#39;s loyalty with a fake account. I agreed, but gave her my fake instead. Imagine my horror when she used it not to seduce him, but to viciously slander me...
+                </p>
+                
+                
+                <div class="action-buttons">
+                    
+                    <a href="/novels/she-wanted-my-fiancé/chapter-1" class="btn btn-primary" id="start-reading-btn">Start Reading</a>
+                    <div class="reading-history" id="reading-history" style="display: none;">
+                        <div class="history-header">
+                            <i class="fas fa-history"></i>
+                            <span>Continue Reading</span>
+                        </div>
+                        <div class="history-info">
+                            <div class="last-read-chapter">Chapter <span id="last-chapter-num">1</span></div>
+                            <div class="reading-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progress-fill"></div>
+                                </div>
+                                <span class="progress-text" id="progress-text">0% completed</span>
+                            </div>
+                            <div class="last-read-time">Last read: <span id="last-read-time">Never</span></div>
+                        </div>
+                        <a href="#" class="btn btn-primary" id="continue-reading-btn">Continue Reading</a>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+        
+        <!-- 书籍简介 -->
+        
+        <div class="book-description">
+            <h2 class="section-title">Synopsis</h2>
+            
+            
+            <p class="description-text">My best friend insisted on testing my fiancé&#39;s loyalty with a fake account. I agreed, but gave her my fake instead. Imagine my horror when she used it not to seduce him, but to viciously slander me and steal him away. Now, it&#39;s time to turn the tables and give her a taste of her own medicine.</p>
+            
+            
+        </div>
+        
+        
+        <!-- 章节目录 -->
+        
+        <div class="chapters-container">
+            <div class="chapters-header">
+                <h2 class="section-title">Chapters (13)</h2>
+                <div class="chapters-filter">
+                    <button class="filter-btn active">All</button>
+                    <button class="filter-btn">Free</button>
+                    <button class="filter-btn">Latest</button>
+                    <button class="filter-btn"><i class="fas fa-sort-amount-down"></i> Sort</button>
+                </div>
+            </div>
+            
+            <ul class="chapters-list">
+                
+                <li class="chapter-item" data-chapter="1">
+                    <a href="/novels/she-wanted-my-fiancé/chapter-1" class="chapter-link">
+                        <div class="chapter-status">
+                            <div class="status-icon unread" id="status-1">
+                                <i class="fas fa-circle" style="font-size: 6px;"></i>
+                            </div>
+                            <span class="chapter-title">Chapter 1</span>
+                        </div>
+                        
+                        <span class="chapter-date">2026-01-09</span>
+                        
+                    </a>
+                </li>
+                
+                <li class="chapter-item" data-chapter="2">
+                    <a href="/novels/she-wanted-my-fiancé/chapter-2" class="chapter-link">
+                        <div class="chapter-status">
+                            <div class="status-icon unread" id="status-2">
+                                <i class="fas fa-circle" style="font-size: 6px;"></i>
+                            </div>
+                            <span class="chapter-title">Chapter 2</span>
+                        </div>
+                        
+                        <span class="chapter-date">2026-01-09</span>
+                        
+                    </a>
+                </li>
+                
+                <li class="chapter-item" data-chapter="3">
+                    <a href="/novels/she-wanted-my-fiancé/chapter-3" class="chapter-link">
+                        <div class="chapter-status">
+                            <div class="status-icon unread" id="status-3">
+                                <i class="fas fa-circle" style="font-size: 6px;"></i>
+                            </div>
+                            <span class="chapter-title">Chapter 3</span>
+                        </div>
+                        
+                        <span class="chapter-date">2026-01-09</span>
+                        
+                    </a>
+                </li>
+                
+                <li class="chapter-item" data-chapter="4">
+                    <a href="/novels/she-wanted-my-fiancé/chapter-4" class="chapter-link">
+                        <div class="chapter-status">
+                            <div class="status-icon unread" id="status-4">
+                                <i class="fas fa-circle" style="font-size: 6px;"></i>
+                            </div>
+                            <span class="chapter-title">Chapter 4</span>
+                        </div>
+                        
+                        <span class="chapter-date">2026-01-09</span>
+                        
+                    </a>
+                </li>
+                
+                <li class="chapter-item" data-chapter="5">
+                    <a href="/novels/she-wanted-my-fiancé/chapter-5" class="chapter-link">
+                        <div class="chapter-status">
+                            <div class="status-icon unread" id="status-5">
+                                <i class="fas fa-circle" style="font-size: 6px;"></i>
+                            </div>
+                            <span class="chapter-title">Chapter 5</span>
+                        </div>
+                        
+                        <span class="chapter-date">2026-01-09</span>
+                        
+                    </a>
+                </li>
+                
+                <li class="chapter-item" data-chapter="6">
+                    <a href="/novels/she-wanted-my-fiancé/chapter-6" class="chapter-link">
+                        <div class="chapter-status">
+                            <div class="status-icon unread" id="status-6">
+                                <i class="fas fa-circle" style="font-size: 6px;"></i>
+                            </div>
+                            <span class="chapter-title">Chapter 6</span>
+                        </div>
+                        
+                        <span class="chapter-date">2026-01-09</span>
+                        
+                    </a>
+                </li>
+                
+                <li class="chapter-item" data-chapter="7">
+                    <a href="/novels/she-wanted-my-fiancé/chapter-7" class="chapter-link">
+                        <div class="chapter-status">
+                            <div class="status-icon unread" id="status-7">
+                                <i class="fas fa-circle" style="font-size: 6px;"></i>
+                            </div>
+                            <span class="chapter-title">Chapter 7</span>
+                        </div>
+                        
+                        <span class="chapter-date">2026-01-09</span>
+                        
+                    </a>
+                </li>
+                
+                <li class="chapter-item" data-chapter="8">
+                    <a href="/novels/she-wanted-my-fiancé/chapter-8" class="chapter-link">
+                        <div class="chapter-status">
+                            <div class="status-icon unread" id="status-8">
+                                <i class="fas fa-circle" style="font-size: 6px;"></i>
+                            </div>
+                            <span class="chapter-title">Chapter 8</span>
+                        </div>
+                        
+                        <span class="chapter-date">2026-01-09</span>
+                        
+                    </a>
+                </li>
+                
+                <li class="chapter-item" data-chapter="9">
+                    <a href="/novels/she-wanted-my-fiancé/chapter-9" class="chapter-link">
+                        <div class="chapter-status">
+                            <div class="status-icon unread" id="status-9">
+                                <i class="fas fa-circle" style="font-size: 6px;"></i>
+                            </div>
+                            <span class="chapter-title">Chapter 9</span>
+                        </div>
+                        
+                        <span class="chapter-date">2026-01-09</span>
+                        
+                    </a>
+                </li>
+                
+                <li class="chapter-item" data-chapter="10">
+                    <a href="/novels/she-wanted-my-fiancé/chapter-10" class="chapter-link">
+                        <div class="chapter-status">
+                            <div class="status-icon unread" id="status-10">
+                                <i class="fas fa-circle" style="font-size: 6px;"></i>
+                            </div>
+                            <span class="chapter-title">Chapter 10</span>
+                        </div>
+                        
+                        <span class="chapter-date">2026-01-09</span>
+                        
+                    </a>
+                </li>
+                
+                <li class="chapter-item" data-chapter="11">
+                    <a href="/novels/she-wanted-my-fiancé/chapter-11" class="chapter-link">
+                        <div class="chapter-status">
+                            <div class="status-icon unread" id="status-11">
+                                <i class="fas fa-circle" style="font-size: 6px;"></i>
+                            </div>
+                            <span class="chapter-title">Chapter 11</span>
+                        </div>
+                        
+                        <span class="chapter-date">2026-01-09</span>
+                        
+                    </a>
+                </li>
+                
+                <li class="chapter-item" data-chapter="12">
+                    <a href="/novels/she-wanted-my-fiancé/chapter-12" class="chapter-link">
+                        <div class="chapter-status">
+                            <div class="status-icon unread" id="status-12">
+                                <i class="fas fa-circle" style="font-size: 6px;"></i>
+                            </div>
+                            <span class="chapter-title">Chapter 12</span>
+                        </div>
+                        
+                        <span class="chapter-date">2026-01-09</span>
+                        
+                    </a>
+                </li>
+                
+                <li class="chapter-item" data-chapter="13">
+                    <a href="/novels/she-wanted-my-fiancé/chapter-13" class="chapter-link">
+                        <div class="chapter-status">
+                            <div class="status-icon unread" id="status-13">
+                                <i class="fas fa-circle" style="font-size: 6px;"></i>
+                            </div>
+                            <span class="chapter-title">Chapter 13</span>
+                        </div>
+                        
+                        <span class="chapter-date">2026-01-09</span>
+                        
+                    </a>
+                </li>
+                
+            </ul>
+        </div>
+        
+    </div>
+    
+    <!-- 底部导航 - 移动端 -->
+    <div class="bottom-nav">
+        <div class="bottom-nav-buttons">
+            <div class="bottom-nav-btn active">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </div>
+            <div class="bottom-nav-btn">
+                <i class="fas fa-compass"></i>
+                <span>Discover</span>
+            </div>
+            <div class="bottom-nav-btn">
+                <i class="fas fa-book"></i>
+                <span>Library</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== Facebook Tracking Parameters Preservation System =====
+        
+        const TRACKING_PARAMS = [
+            'fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 
+            'utm_term', 'utm_content', 'utm_id', 'gclid', 'msclkid', 'ttclid'
+        ];
+        
+        function extractTrackingParams(url) {
+            const urlObj = new URL(url, window.location.origin);
+            const params = {};
+            let hasParams = false;
+            
+            TRACKING_PARAMS.forEach(param => {
+                const value = urlObj.searchParams.get(param);
+                if (value) {
+                    params[param] = value;
+                    hasParams = true;
+                }
+            });
+            
+            return hasParams ? params : null;
+        }
+        
+        function saveCurrentTrackingParams() {
+            const currentParams = extractTrackingParams(window.location.href);
+            
+            if (currentParams) {
+                localStorage.setItem('trackingParams', JSON.stringify(currentParams));
+                localStorage.setItem('trackingParamsTimestamp', Date.now().toString());
+                console.log('📊 [小说页] 保存新的追踪参数:', currentParams);
+                return true;
+            }
+            
+            return false;
+        }
+        
+        function getStoredTrackingParams() {
+            try {
+                const paramsStr = localStorage.getItem('trackingParams');
+                const timestamp = localStorage.getItem('trackingParamsTimestamp');
+                
+                if (!paramsStr || !timestamp) return null;
+                
+                const age = Date.now() - parseInt(timestamp);
+                const twentyFourHours = 24 * 60 * 60 * 1000;
+                
+                if (age > twentyFourHours) {
+                    localStorage.removeItem('trackingParams');
+                    localStorage.removeItem('trackingParamsTimestamp');
+                    return null;
+                }
+                
+                return JSON.parse(paramsStr);
+            } catch (error) {
+                return null;
+            }
+        }
+        
+        function addTrackingParams(url) {
+            try {
+                const urlObj = new URL(url, window.location.origin);
+                
+                const hasExistingParams = TRACKING_PARAMS.some(param => 
+                    urlObj.searchParams.has(param)
+                );
+                
+                if (hasExistingParams) {
+                    return url;
+                }
+                
+                const storedParams = getStoredTrackingParams();
+                
+                if (storedParams) {
+                    Object.keys(storedParams).forEach(key => {
+                        urlObj.searchParams.set(key, storedParams[key]);
+                    });
+                    return urlObj.toString();
+                }
+                
+                return url;
+            } catch (error) {
+                return url;
+            }
+        }
+        
+        function initTrackingSystem() {
+            saveCurrentTrackingParams();
+            
+            // 为所有章节链接添加追踪参数
+            document.querySelectorAll('a[href*="/chapter-"]').forEach(link => {
+                if (link.href) {
+                    const originalHref = link.href;
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        window.location.href = addTrackingParams(originalHref);
+                    });
+                }
+            });
+            
+            console.log('📊 [小说页] 追踪参数系统已初始化');
+        }
+        
+        document.addEventListener('DOMContentLoaded', initTrackingSystem);
+        
+        // 阅读历史记录管理
+        document.addEventListener('DOMContentLoaded', function() {
+            const novelTitle = 'She Wanted My Fiancé';
+            const totalChapters = 13;
+            
+            // 加载并显示阅读历史
+            loadReadingHistory();
+            
+            function loadReadingHistory() {
+                const history = JSON.parse(localStorage.getItem('readingHistory') || '[]');
+                const currentNovelHistory = history.find(item => item.title === novelTitle);
+                
+                if (currentNovelHistory && currentNovelHistory.currentChapter > 0) {
+                    showReadingHistory(currentNovelHistory);
+                    updateChapterStatuses(currentNovelHistory);
+                }
+            }
+            
+            function showReadingHistory(historyData) {
+                const startReadingBtn = document.getElementById('start-reading-btn');
+                const readingHistory = document.getElementById('reading-history');
+                const continueBtn = document.getElementById('continue-reading-btn');
+                
+                if (startReadingBtn && readingHistory) {
+                    startReadingBtn.style.display = 'none';
+                    readingHistory.style.display = 'block';
+                    
+                    // 更新历史信息
+                    document.getElementById('last-chapter-num').textContent = historyData.currentChapter;
+                    
+                    // 计算阅读进度
+                    const progress = Math.round((historyData.currentChapter / totalChapters) * 100);
+                    document.getElementById('progress-fill').style.width = progress + '%';
+                    document.getElementById('progress-text').textContent = progress + '% completed';
+                    
+                    // 格式化最后阅读时间
+                    const lastReadTime = new Date(historyData.lastRead);
+                    const now = new Date();
+                    const timeDiff = now - lastReadTime;
+                    const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+                    const days = Math.floor(hours / 24);
+                    
+                    let timeText;
+                    if (days > 0) {
+                        timeText = days === 1 ? '1 day ago' : `${days} days ago`;
+                    } else if (hours > 0) {
+                        timeText = hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+                    } else {
+                        timeText = 'Just now';
+                    }
+                    
+                    document.getElementById('last-read-time').textContent = timeText;
+                    
+                    // 设置继续阅读按钮链接
+                    const chapterUrl = findChapterUrl(historyData.currentChapter);
+                    if (chapterUrl) {
+                        continueBtn.href = chapterUrl;
+                    }
+                }
+            }
+            
+            function updateChapterStatuses(historyData) {
+                const currentChapter = historyData.currentChapter;
+                
+                // 更新所有章节的状态
+                for (let i = 1; i <= totalChapters; i++) {
+                    const statusIcon = document.getElementById(`status-${i}`);
+                    const chapterItem = document.querySelector(`[data-chapter="${i}"]`);
+                    
+                    if (statusIcon && chapterItem) {
+                        if (i < currentChapter) {
+                            // 已读章节
+                            statusIcon.className = 'status-icon read';
+                            statusIcon.innerHTML = '<i class="fas fa-check"></i>';
+                            chapterItem.classList.add('read');
+                        } else if (i === currentChapter) {
+                            // 当前章节
+                            statusIcon.className = 'status-icon current';
+                            statusIcon.innerHTML = '<i class="fas fa-play" style="font-size: 8px;"></i>';
+                            chapterItem.classList.add('current');
+                        } else {
+                            // 未读章节
+                            statusIcon.className = 'status-icon unread';
+                            statusIcon.innerHTML = '<i class="fas fa-circle" style="font-size: 6px;"></i>';
+                        }
+                    }
+                }
+            }
+            
+            function findChapterUrl(chapterNumber) {
+                const chapterLinks = document.querySelectorAll('.chapter-link');
+                for (let link of chapterLinks) {
+                    const chapterItem = link.closest('[data-chapter]');
+                    if (chapterItem && parseInt(chapterItem.dataset.chapter) === chapterNumber) {
+                        return link.href;
+                    }
+                }
+                return null;
+            }
+            
+            // 过滤按钮切换
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const filterType = this.textContent.trim();
+                    filterChapters(filterType);
+                });
+            });
+            
+            function filterChapters(filterType) {
+                const chapterItems = document.querySelectorAll('.chapter-item');
+                
+                chapterItems.forEach(item => {
+                    let shouldShow = true;
+                    
+                    switch(filterType) {
+                        case 'Free':
+                            // 所有章节都是免费的
+                            shouldShow = true;
+                            break;
+                        case 'Latest':
+                            // 显示最新的10章
+                            const chapterNum = parseInt(item.dataset.chapter);
+                            shouldShow = chapterNum > totalChapters - 10;
+                            break;
+                        case 'All':
+                        default:
+                            shouldShow = true;
+                            break;
+                    }
+                    
+                    item.style.display = shouldShow ? 'flex' : 'none';
+                });
+            }
+            
+            // 章节点击效果
+            const chapterItems = document.querySelectorAll('.chapter-item a');
+            chapterItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // 记录用户点击了哪一章
+                    const chapterItem = this.closest('[data-chapter]');
+                    if (chapterItem) {
+                        const chapterNumber = parseInt(chapterItem.dataset.chapter);
+                        console.log(`User clicked on chapter ${chapterNumber}: ${this.querySelector('.chapter-title').textContent}`);
+                        
+                        // 可以在这里添加分析跟踪代码
+                        if (typeof gtag !== 'undefined') {
+                            gtag('event', 'chapter_click', {
+                                'novel_title': novelTitle,
+                                'chapter_number': chapterNumber
+                            });
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
