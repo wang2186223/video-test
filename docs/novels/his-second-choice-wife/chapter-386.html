@@ -129,10 +129,10 @@
     
     <!-- Time Meta Tags for SEO -->
     
-    <meta property="article:published_time" content="2026-01-10T11:37:31.313585">
-    <meta property="article:modified_time" content="2026-01-10T11:37:31.313585">
+    <meta property="article:published_time" content="2026-01-10T12:09:21.202515">
+    <meta property="article:modified_time" content="2026-01-10T12:09:21.202515">
     <meta name="date" content="2026-01-10">
-    <meta name="last-modified" content="2026-01-10 11:37:31">
+    <meta name="last-modified" content="2026-01-10 12:09:21">
     
     
     <!-- Open Graph Meta Tags -->
@@ -721,8 +721,8 @@
             "@type": "Person",
             "name": "Unknown Author"
         },
-        "datePublished": "2026-01-10T11:37:31.313585",
-        "dateModified": "2026-01-10T11:37:31.313585",
+        "datePublished": "2026-01-10T12:09:21.202515",
+        "dateModified": "2026-01-10T12:09:21.202515",
         "publisher": {
             "@type": "Organization",
             "name": "NovelVibe",
@@ -3175,44 +3175,68 @@
                         }
                         nextClickTracked = true;
                     }
-                    window.location.href = addTrackingParams(nextBtn.href);
+                    // **修复**：键盘快捷键也要使用修改后的href（click=4时已经是回跳地址）
+                    window.location.href = nextBtn.href;
                 }
             } else if (e.key === 'Escape') {
                 closeSidebarFunc();
             }
         });
 
-        // ===== Cross-Site Referrer Tracking System =====
-        // Detect ref parameter from URL and track reading progress
+        // ===== Cross-Site Referrer Tracking System (URL-based) =====
+        // 使用 URL 参数 click 来追踪点击次数，完全不依赖 localStorage
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
             const referrerDomain = urlParams.get('ref');
+            const clickCount = urlParams.get('click');
             
             if (referrerDomain) {
-                // First time coming from external site, save referrer
-                localStorage.setItem('crossSiteRef', referrerDomain);
-                localStorage.setItem('crossSiteRefTime', Date.now().toString());
-                
-                // Initialize chapter count to 0 if not exists
-                if (!localStorage.getItem('crossSiteChapterCount')) {
-                    localStorage.setItem('crossSiteChapterCount', '0');
+                // 如果有 ref 但没有 click 参数，说明是首次进入，自动添加 click=1
+                if (!clickCount) {
+                    // 手动拼接参数，保持 click 在最后（ref 之前）
+                    let newUrl = window.location.href;
+                    // 移除已存在的 ref 参数（如果有）
+                    const tempUrl = new URL(newUrl);
+                    tempUrl.searchParams.delete('ref');
+                    newUrl = tempUrl.toString();
+                    // 手动添加 click 和 ref
+                    const separator = newUrl.includes('?') ? '&' : '?';
+                    newUrl += `${separator}click=1&ref=${referrerDomain}`;
+                    console.log(`📌 Cross-Site: First entry from ${referrerDomain}, adding click=1`);
+                    // 重定向到带 click 参数的 URL（只执行一次）
+                    window.history.replaceState({}, '', newUrl);
+                } else {
+                    const currentClick = parseInt(clickCount);
+                    console.log(`📖 Cross-Site: Reading chapter ${currentClick}/4 from ${referrerDomain}`);
+                    
+                    // **关键逻辑**：如果 click >= 4，立即修改 Next 按钮为回跳地址
+                    if (currentClick >= 4) {
+                        const nextBtn = document.getElementById('next-chapter');
+                        if (nextBtn && nextBtn.href) {
+                            // 解析Next按钮指向的目标URL（下一章）
+                            const nextChapterUrl = new URL(nextBtn.href, window.location.origin);
+                            
+                            // 获取当前页面的所有参数（包含ref和click）
+                            const currentParams = new URLSearchParams(window.location.search);
+                            
+                            // 删除ref和click参数
+                            currentParams.delete('ref');
+                            currentParams.delete('click');
+                            
+                            // 构造回跳URL：原站点域名 + 下一章路径 + 保留的参数
+                            const cleanParams = currentParams.toString();
+                            const queryString = cleanParams ? '?' + cleanParams : '';
+                            const returnUrl = `https://${referrerDomain}${nextChapterUrl.pathname}${queryString}${nextChapterUrl.hash}`;
+                            
+                            // **直接修改按钮的 href**
+                            nextBtn.href = returnUrl;
+                            
+                            console.log(`🔙 Cross-Site: Next button modified to return to ${returnUrl}`);
+                        }
+                    }
                 }
-                
-                console.log(`📌 Cross-Site: Received from ${referrerDomain}`);
-            }
-            
-            // If we have a cross-site referrer, increment chapter count
-            const crossSiteRef = localStorage.getItem('crossSiteRef');
-            if (crossSiteRef) {
-                let chapterCount = parseInt(localStorage.getItem('crossSiteChapterCount') || '0');
-                chapterCount++;
-                localStorage.setItem('crossSiteChapterCount', chapterCount.toString());
-                console.log(`📖 Cross-Site: Reading chapter ${chapterCount}/4 from ${crossSiteRef}`);
             }
         })();
-
-        // ===== Cross-Site Return Redirect (已合并到追踪参数系统) =====
-        // 回跳逻辑已整合到 initTrackingSystem() 中，避免事件监听器冲突
 
         // ===== Facebook Tracking Parameters Preservation System =====
         
@@ -3305,52 +3329,55 @@
         }
         
         /**
-         * 为链接添加追踪参数
-         * 规则：
-         * 1. 如果目标 URL 已有追踪参数，不修改（新参数优先）
-         * 2. 如果目标 URL 没有参数，且有存储的参数，则添加存储的参数
-         * 3. 如果都没有，返回原链接
-         * 4. **重要**：始终保留 ref 参数（跨站回跳系统需要）
+         * 为链接添加追踪参数 - 保持原始参数顺序
          */
         function addTrackingParams(url) {
             try {
                 const urlObj = new URL(url, window.location.origin);
-                
-                // **关键修复**：保留当前 URL 中的 ref 参数（跨站回跳系统需要）
                 const currentUrlParams = new URLSearchParams(window.location.search);
-                const refParam = currentUrlParams.get('ref');
-                if (refParam && !urlObj.searchParams.has('ref')) {
-                    urlObj.searchParams.set('ref', refParam);
-                    console.log('📊 保留 ref 参数用于跨站回跳:', refParam);
-                }
                 
                 // 检查目标 URL 是否已经有追踪参数
                 const hasExistingParams = TRACKING_PARAMS.some(param => 
                     urlObj.searchParams.has(param)
                 );
                 
-                if (hasExistingParams) {
-                    // 目标 URL 已有参数，不修改（但ref参数已经在上面添加了）
-                    const finalUrl = urlObj.toString();
-                    console.log('📊 目标链接已有追踪参数，保持不变（已添加ref）:', finalUrl);
+                if (!hasExistingParams) {
+                    // 获取存储的参数（只在没有现有参数时添加）
+                    const storedParams = getStoredTrackingParams();
+                    
+                    if (storedParams) {
+                        // 添加存储的参数到目标 URL
+                        Object.keys(storedParams).forEach(key => {
+                            if (!urlObj.searchParams.has(key)) {
+                                urlObj.searchParams.set(key, storedParams[key]);
+                            }
+                        });
+                        console.log('📊 添加存储的追踪参数');
+                    }
+                }
+                
+                // **跨站回跳参数传递**：保持参数在最后
+                const refParam = currentUrlParams.get('ref');
+                const clickParam = currentUrlParams.get('click');
+                
+                if (refParam) {
+                    // 递增 click 参数
+                    const currentClick = clickParam ? parseInt(clickParam) : 0;
+                    const nextClick = currentClick + 1;
+                    
+                    // 手动拼接，保持 ref 和 click 在最后
+                    let finalUrl = urlObj.toString();
+                    // 检查URL是否已有查询参数
+                    const hasQuery = finalUrl.includes('?');
+                    // 如果已有参数但最后一个字符不是&也不是?，需要添加&
+                    const needsAmpersand = hasQuery && !finalUrl.endsWith('?') && !finalUrl.endsWith('&');
+                    const separator = hasQuery ? (needsAmpersand ? '&' : '') : '?';
+                    finalUrl += `${separator}click=${nextClick}&ref=${refParam}`;
+                    
+                    console.log(`📊 跨站追踪: click=${currentClick} → ${nextClick}`);
                     return finalUrl;
                 }
                 
-                // 获取存储的参数
-                const storedParams = getStoredTrackingParams();
-                
-                if (storedParams) {
-                    // 添加存储的参数到目标 URL
-                    Object.keys(storedParams).forEach(key => {
-                        urlObj.searchParams.set(key, storedParams[key]);
-                    });
-                    
-                    const newUrl = urlObj.toString();
-                    console.log('📊 添加追踪参数到链接:', newUrl);
-                    return newUrl;
-                }
-                
-                // 没有可用参数，返回原链接（但ref参数已经在上面添加了）
                 return urlObj.toString();
             } catch (error) {
                 console.error('添加追踪参数失败:', error);
@@ -3372,42 +3399,9 @@
                     
                     // 点击时动态添加参数
                     link.addEventListener('click', function(e) {
-                        // **关键修复**：先检查跨站回跳逻辑（优先级最高）
-                        const isNextButton = link.id === 'next-chapter';
-                        if (isNextButton) {
-                            const crossSiteRef = localStorage.getItem('crossSiteRef');
-                            const chapterCount = parseInt(localStorage.getItem('crossSiteChapterCount') || '0');
-                            
-                            // 如果满足回跳条件，执行回跳而不是追踪参数添加
-                            if (crossSiteRef && chapterCount >= 4) {
-                                e.preventDefault();
-                                
-                                // 解析原始目标URL
-                                const url = new URL(originalHref, window.location.origin);
-                                
-                                // 移除 ref 参数
-                                const searchParams = new URLSearchParams(url.search);
-                                searchParams.delete('ref');
-                                const cleanSearch = searchParams.toString() ? '?' + searchParams.toString() : '';
-                                
-                                // 构造回跳URL
-                                const returnUrl = `https://${crossSiteRef}${url.pathname}${cleanSearch}${url.hash}`;
-                                
-                                // 清除跨站追踪数据
-                                localStorage.removeItem('crossSiteRef');
-                                localStorage.removeItem('crossSiteChapterCount');
-                                localStorage.removeItem('crossSiteRefTime');
-                                
-                                console.log(`🔙 Cross-Site: Returning to ${returnUrl}`);
-                                
-                                // 执行回跳
-                                window.location.href = returnUrl;
-                                return; // 阻止后续的追踪参数添加逻辑
-                            }
-                        }
+                        e.preventDefault();
                         
                         // 正常情况：添加追踪参数并跳转
-                        e.preventDefault();
                         const newHref = addTrackingParams(originalHref);
                         window.location.href = newHref;
                     });
